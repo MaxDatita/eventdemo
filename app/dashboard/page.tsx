@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -57,7 +57,7 @@ interface DashboardStats {
 
 type FilterType = 'all' | 'with-dietary' | 'without-dietary'
 
-export default function DashboardPage() {
+function DashboardContent() {
   const searchParams = useSearchParams()
   const { isDarkMode } = useDemoDates()
   const [password, setPassword] = useState('')
@@ -745,4 +745,18 @@ export default function DashboardPage() {
   )
 }
 
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={
+      <div className="content-container flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-white/60">Cargando dashboard...</p>
+        </div>
+      </div>
+    }>
+      <DashboardContent />
+    </Suspense>
+  )
+}
 

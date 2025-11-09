@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,7 +22,7 @@ interface Photo {
 
 type TabType = 'pending' | 'approved' | 'rejected';
 
-export default function ModerationPage() {
+function ModerationContent() {
   const searchParams = useSearchParams();
   const { isDarkMode, isDemoMode } = useDemoDates();
   const [password, setPassword] = useState('');
@@ -472,5 +472,20 @@ export default function ModerationPage() {
         </DialogContent>
       </Dialog>
     </>
+  );
+}
+
+export default function ModerationPage() {
+  return (
+    <Suspense fallback={
+      <div className="content-container flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-white/60">Cargando moderación...</p>
+        </div>
+      </div>
+    }>
+      <ModerationContent />
+    </Suspense>
   );
 }

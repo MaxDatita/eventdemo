@@ -8,11 +8,12 @@ export async function GET() {
     });
     const oauth = new OAuth(client);
 
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://eventdemo.vercel.app';
     const url = oauth.getAuthorizationURL({
       options: {
         client_id: process.env.NEXT_PUBLIC_MP_CLIENT_ID!,
         redirect_uri: 'https://auth.eventechy.com/api/mercadopago/connect',
-        state: process.env.NEXT_PUBLIC_BASE_URL!.replace('https://', '') // Remover https://
+        state: baseUrl.replace('https://', '') // Remover https://
       },
     });
 
