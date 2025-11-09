@@ -5,7 +5,9 @@ import Providers from './providers'
 import { PreconnectLinks } from '@/components/preconnect-links'
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL!),
+  metadataBase: process.env.NEXT_PUBLIC_BASE_URL 
+    ? new URL(process.env.NEXT_PUBLIC_BASE_URL)
+    : new URL('https://eventdemo.vercel.app'),
   title: "Eventest - Invitación Digital",
   description: "Te invitamos a compartir una noche inolvidable",
   openGraph: {
