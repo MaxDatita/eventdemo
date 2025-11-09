@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
 import { demoPhotos } from '@/data/demo-photos';
 import { photoWallConfig } from '@/config/photo-wall';
-import { theme } from '@/config/theme';
-import { googleDriveService, getDirectImageUrl, getThumbnailUrl, getDirectDownloadUrl, getVideoUrl, getVideoThumbnailUrl } from '@/lib/google-drive';
+import { getGoogleDriveService, getDirectImageUrl, getThumbnailUrl } from '@/lib/google-drive';
 
 export async function GET(request: Request) {
   try {
@@ -19,6 +18,14 @@ export async function GET(request: Request) {
     );
 
     if (!isGoogleDriveConfigured) {
+      console.warn('Google Drive no está configurado. Usando datos demo.');
+      const approvedPhotos = demoPhotos.filter(photo => photo.approved);
+      return NextResponse.json({ photos: approvedPhotos });
+    }
+
+    // Obtener instancia de Google Drive Service
+    const googleDriveService = getGoogleDriveService();
+    if (!googleDriveService) {
       console.warn('Google Drive no está configurado. Usando datos demo.');
       const approvedPhotos = demoPhotos.filter(photo => photo.approved);
       return NextResponse.json({ photos: approvedPhotos });

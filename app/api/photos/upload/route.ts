@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { photoWallConfig } from '@/config/photo-wall';
-import { googleDriveService } from '@/lib/google-drive';
+import { getGoogleDriveService } from '@/lib/google-drive';
 
 export async function POST(request: NextRequest) {
   try {
@@ -48,6 +48,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ 
         error: `El archivo es muy grande. Máximo: ${photoWallConfig.maxFileSize}MB` 
       }, { status: 400 });
+    }
+
+    // Obtener instancia de Google Drive Service
+    const googleDriveService = getGoogleDriveService();
+    if (!googleDriveService) {
+      return NextResponse.json({ 
+        error: 'Google Drive no está configurado. Por favor, contacta al administrador.',
+        code: 'DRIVE_NOT_CONFIGURED'
+      }, { status: 503 });
     }
 
     // Convertir File a Buffer

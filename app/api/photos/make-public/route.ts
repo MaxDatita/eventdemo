@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { googleDriveService } from '@/lib/google-drive';
+import { getGoogleDriveService } from '@/lib/google-drive';
 
 export async function POST() {
   try {
@@ -11,6 +11,14 @@ export async function POST() {
     );
 
     if (!isGoogleDriveConfigured) {
+      return NextResponse.json({ 
+        error: 'Google Drive no está configurado' 
+      }, { status: 400 });
+    }
+
+    // Obtener instancia de Google Drive Service
+    const googleDriveService = getGoogleDriveService();
+    if (!googleDriveService) {
       return NextResponse.json({ 
         error: 'Google Drive no está configurado' 
       }, { status: 400 });

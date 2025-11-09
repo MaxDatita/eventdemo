@@ -729,17 +729,22 @@ export function getVideoThumbnailUrl(fileId: string, size: 'small' | 'medium' | 
 // Instancia singleton con manejo de errores
 let googleDriveServiceInstance: GoogleDriveService | null = null;
 
-export function getGoogleDriveService(): GoogleDriveService {
+export function getGoogleDriveService(): GoogleDriveService | null {
+  // Solo inicializar si las variables de entorno están configuradas
+  if (!process.env.GOOGLE_DRIVE_FOLDER_ID || 
+      !process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || 
+      !process.env.GOOGLE_PRIVATE_KEY) {
+    return null;
+  }
+
   if (!googleDriveServiceInstance) {
     try {
       googleDriveServiceInstance = new GoogleDriveService();
     } catch (error) {
       console.error('Error inicializando GoogleDriveService:', error);
-      throw error;
+      return null;
     }
   }
   return googleDriveServiceInstance;
 }
 
-// Exportar instancia para compatibilidad
-export const googleDriveService = getGoogleDriveService();

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { photoWallConfig } from '@/config/photo-wall';
-import { googleDriveService } from '@/lib/google-drive';
+import { getGoogleDriveService } from '@/lib/google-drive';
 
 export async function PUT(request: NextRequest) {
   try {
@@ -24,6 +24,15 @@ export async function PUT(request: NextRequest) {
     );
 
     if (!isGoogleDriveConfigured) {
+      return NextResponse.json({ 
+        success: true, 
+        message: action === 'approve' ? 'Foto aprobada (modo demo)' : 'Foto rechazada (modo demo)'
+      });
+    }
+
+    // Obtener instancia de Google Drive Service
+    const googleDriveService = getGoogleDriveService();
+    if (!googleDriveService) {
       return NextResponse.json({ 
         success: true, 
         message: action === 'approve' ? 'Foto aprobada (modo demo)' : 'Foto rechazada (modo demo)'

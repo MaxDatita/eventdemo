@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { photoWallConfig } from '@/config/photo-wall';
-import { googleDriveService } from '@/lib/google-drive';
+import { getGoogleDriveService } from '@/lib/google-drive';
 
 export async function GET(request: NextRequest) {
   try {
@@ -18,6 +18,15 @@ export async function GET(request: NextRequest) {
     );
 
     if (!isGoogleDriveConfigured) {
+      return NextResponse.json({ 
+        photos: [],
+        message: 'Google Drive no configurado.'
+      });
+    }
+
+    // Obtener instancia de Google Drive Service
+    const googleDriveService = getGoogleDriveService();
+    if (!googleDriveService) {
       return NextResponse.json({ 
         photos: [],
         message: 'Google Drive no configurado.'
