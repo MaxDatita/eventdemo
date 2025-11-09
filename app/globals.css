@@ -15,11 +15,16 @@
     height: 100%;
     height: -webkit-fill-available;
     overflow-x: hidden;
+    /* Fondo base que siempre será visible - extendido para cubrir notch y navegación */
     background: linear-gradient(140deg, 
       #000000 0%,
       #471069 55%,
       #196E76 100%
     );
+    background-attachment: fixed;
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center;
   }
 
   body {
@@ -32,7 +37,16 @@
     overflow-x: hidden;
     width: 100%;
     position: relative;
-    background: transparent;
+    /* Fondo de respaldo que cubre todo */
+    background: linear-gradient(140deg, 
+      #000000 0%,
+      #471069 55%,
+      #196E76 100%
+    );
+    background-attachment: fixed;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
   }
 
   /* Font families */
@@ -50,7 +64,7 @@
 }
 
 @layer components {
-  /* Gradiente de fondo */
+  /* Gradiente de fondo - extendido para cubrir notch y barra de navegación */
   .bg-gradient-animation {
     background: linear-gradient(140deg, 
       #000000 0%,      /* Color1 */
@@ -58,18 +72,23 @@
       #196E76 100%     /* Color3 */
     );
     position: fixed;
-    top: 0;
+    /* Extender más arriba y abajo para cubrir notch y navegación del navegador */
+    top: -200px;
     left: 0;
     right: 0;
-    bottom: 0;
+    bottom: -200px;
     width: 100%;
-    height: 100%;
-    min-height: 100vh;
-    min-height: -webkit-fill-available;
-    min-height: 100dvh;
+    height: calc(100% + 400px);
+    min-height: calc(100vh + 400px);
+    min-height: calc(100dvh + 400px);
     z-index: -1;
     /* Asegurar que cubra toda la pantalla incluso con scroll */
     background-attachment: fixed;
+    background-size: cover;
+    background-position: center;
+    /* Extender el fondo para cubrir áreas seguras */
+    margin-top: calc(-1 * env(safe-area-inset-top, 0px));
+    margin-bottom: calc(-1 * env(safe-area-inset-bottom, 0px));
   }
 
   .animate-bounce {
@@ -263,13 +282,16 @@
     min-height: -webkit-fill-available;
     min-height: 100dvh;
     padding: 1.5rem;
-    padding-top: max(1.5rem, env(safe-area-inset-top));
-    padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+    /* Asegurar padding adicional arriba y abajo para cubrir notch y navegación */
+    padding-top: max(1.5rem, calc(env(safe-area-inset-top, 0px) + 1.5rem));
+    padding-bottom: max(1.5rem, calc(env(safe-area-inset-bottom, 0px) + 1.5rem));
     overflow-y: auto;
     overflow-x: hidden;
     z-index: 1;
     -webkit-overflow-scrolling: touch;
     box-sizing: border-box;
+    /* Asegurar que el fondo siempre sea visible */
+    background: transparent;
   }
 
   /* Efecto flotante para imágenes de proyección */
