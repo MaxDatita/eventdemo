@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
       }
     } else if (typeof error === 'object' && error !== null) {
       // Intentar extraer información del error
-      const errorObj = error as any;
+      const errorObj = error as { message?: string; error?: string; code?: string };
       errorDetails = errorObj.message || errorObj.error || JSON.stringify(error);
       if (errorObj.code) {
         if (errorObj.code === 'ECONNREFUSED') {

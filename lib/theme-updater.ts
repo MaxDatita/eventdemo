@@ -150,16 +150,11 @@ export function updateThemeFile(updates: {
 /**
  * Obtiene la configuración actual de theme.ts
  */
-export function getThemeConfig() {
+export async function getThemeConfig() {
   try {
-    // Importar dinámicamente el theme
-    const themePath = path.join(process.cwd(), 'config', 'theme.ts');
-    // Limpiar el cache si existe
-    if (require.cache[require.resolve(themePath)]) {
-      delete require.cache[require.resolve(themePath)];
-    }
-    const theme = require(themePath).theme;
-    return theme;
+    // Importar dinámicamente el theme usando import dinámico
+    const themeModule = await import('@/config/theme');
+    return themeModule.theme;
   } catch (error) {
     console.error('Error reading theme config:', error);
     return null;

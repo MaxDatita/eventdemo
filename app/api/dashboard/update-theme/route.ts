@@ -33,7 +33,7 @@ export async function POST(request: Request) {
     }
 
     // Obtener la configuración actualizada
-    const updatedConfig = getThemeConfig();
+    const updatedConfig = await getThemeConfig();
 
     return NextResponse.json({
       success: true,
@@ -62,7 +62,7 @@ export async function GET(request: Request) {
     }
 
     // Obtener la configuración actual
-    const config = getThemeConfig();
+    const config = await getThemeConfig();
 
     return NextResponse.json({
       success: true,

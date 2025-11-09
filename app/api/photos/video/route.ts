@@ -50,9 +50,10 @@ export async function GET(req: NextRequest) {
         fields: 'id,name,mimeType,size,webContentLink',
         supportsAllDrives: true,
       });
-    } catch (error: any) {
-      console.error('Error getting file info:', error.message);
-      throw new Error(`No se pudo acceder al archivo: ${error.message}`);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error('Error getting file info:', errorMessage);
+      throw new Error(`No se pudo acceder al archivo: ${errorMessage}`);
     }
 
     console.log('File info:', fileInfo.data);
@@ -73,7 +74,7 @@ export async function GET(req: NextRequest) {
       });
       
       const isPublic = permissions.data.permissions?.some(
-        (p: any) => p.type === 'anyone' && p.role === 'reader'
+        (p) => p.type === 'anyone' && p.role === 'reader'
       );
       
       if (!isPublic) {
@@ -95,8 +96,9 @@ export async function GET(req: NextRequest) {
           supportsAllDrives: true,
         });
       }
-    } catch (permError: any) {
-      console.warn('Could not make file public (may already be public):', permError.message);
+    } catch (permError) {
+      const errorMessage = permError instanceof Error ? permError.message : String(permError);
+      console.warn('Could not make file public (may already be public):', errorMessage);
     }
 
     // Si tenemos webContentLink, usarlo directamente (más confiable para streaming)

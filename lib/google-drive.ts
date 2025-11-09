@@ -422,7 +422,7 @@ export class GoogleDriveService {
               });
               
               const isPublic = permissions.data.permissions?.some(
-                (p: any) => p.type === 'anyone' && p.role === 'reader'
+                (p) => p.type === 'anyone' && p.role === 'reader'
               );
               
               if (!isPublic) {
@@ -550,7 +550,7 @@ export class GoogleDriveService {
               });
               
               const isPublic = permissions.data.permissions?.some(
-                (p: any) => p.type === 'anyone' && p.role === 'reader'
+                (p) => p.type === 'anyone' && p.role === 'reader'
               );
               
               if (!isPublic) {

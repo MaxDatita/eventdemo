@@ -109,9 +109,9 @@ export function ExportSummaryModal({
           doc.text('LISTA DE INVITADOS', 20, y)
           y += 10
           doc.setFontSize(10)
-          result.data.guests.forEach((guest: any, index: number) => {
+          result.data.guests.forEach((guest: { firstName: string; lastName: string; companions?: number; dietaryRequirements?: string }, index: number) => {
             let text = `${index + 1}. ${guest.firstName} ${guest.lastName}`
-            if (guest.companions > 0) {
+            if (guest.companions && guest.companions > 0) {
               text += ` (+${guest.companions} acompañante${
                 guest.companions > 1 ? 's' : ''
               })`
