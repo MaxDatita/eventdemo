@@ -7,8 +7,24 @@
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&display=swap');
 
 @layer base {
+  html {
+    height: 100%;
+    height: -webkit-fill-available;
+    overflow: hidden;
+  }
+
   body {
     @apply font-primary;
+    margin: 0;
+    padding: 0;
+    min-height: 100%;
+    min-height: -webkit-fill-available;
+    min-height: 100dvh;
+    overflow-x: hidden;
+    position: fixed;
+    width: 100%;
+    top: 0;
+    left: 0;
   }
 
   /* Font families */
@@ -231,9 +247,14 @@
     position: relative;
     width: 100%;
     min-height: 100vh;
+    min-height: -webkit-fill-available;
+    min-height: 100dvh;
     padding: 1.5rem;
+    padding-top: env(safe-area-inset-top, 1.5rem);
+    padding-bottom: env(safe-area-inset-bottom, 1.5rem);
     overflow-y: auto;
     z-index: 1;
+    -webkit-overflow-scrolling: touch;
   }
 
   /* Efecto flotante para imágenes de proyección */

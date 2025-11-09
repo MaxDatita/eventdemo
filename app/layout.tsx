@@ -1,8 +1,17 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Toaster } from "sonner";
 import "./globals.css";
 import Providers from './providers'
 import { PreconnectLinks } from '@/components/preconnect-links'
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: 'cover',
+  themeColor: '#471069',
+}
 
 export const metadata: Metadata = {
   metadataBase: process.env.NEXT_PUBLIC_BASE_URL 
@@ -10,6 +19,10 @@ export const metadata: Metadata = {
     : new URL('https://eventdemo.vercel.app'),
   title: "Eventest - Invitación Digital",
   description: "Te invitamos a compartir una noche inolvidable",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+  },
   openGraph: {
     title: "Eventest - Invitación Digital",
     description: "Te invitamos a compartir una noche inolvidable",
