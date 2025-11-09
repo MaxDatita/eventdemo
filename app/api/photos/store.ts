@@ -21,12 +21,12 @@ export function getPhotoStatus(id: string): PhotoStatus | undefined {
 
 export function getPhotosByStatus(status: PhotoStatus): PhotoMeta[] {
   const result: PhotoMeta[] = [];
-  for (const [id, s] of statusMap.entries()) {
+  statusMap.forEach((s, id) => {
     if (s === status) {
       const meta = metaMap.get(id);
       if (meta) result.push(meta);
     }
-  }
+  });
   return result;
 }
 

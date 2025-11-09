@@ -186,7 +186,7 @@ export function ExportSummaryModal({
                 onClick={() => handleExport('text')}
                 disabled={isExporting}
                 className="flex flex-col items-center gap-2 h-auto py-6"
-                variant={isDarkMode ? 'secondary' : 'default'}
+                variant={isDarkMode ? 'secondary' : 'primary'}
               >
                 <FileText className="h-8 w-8" />
                 <span>Exportar como Texto</span>
@@ -199,7 +199,7 @@ export function ExportSummaryModal({
                 onClick={() => handleExport('pdf')}
                 disabled={isExporting}
                 className="flex flex-col items-center gap-2 h-auto py-6"
-                variant={isDarkMode ? 'secondary' : 'default'}
+                variant={isDarkMode ? 'secondary' : 'primary'}
               >
                 <Download className="h-8 w-8" />
                 <span>Exportar como PDF</span>
