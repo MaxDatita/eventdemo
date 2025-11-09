@@ -5,6 +5,7 @@ import { Button } from "./button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "./dialog"
 import { ShoppingCart } from 'lucide-react'
 import { theme } from '@/config/theme'
+import { useDemoDates } from '@/contexts/DemoContext'
 
 interface MenuItem {
   name: string
@@ -50,32 +51,32 @@ const defaultMenuData: MenuData = {
       ]
     }
   },
-//   comidas: {
-//     entrada: {
-//       title: "Entrada",
-//       items: [
-//         { name: "Empanadas de Carne", price: 800, details: "unidad" },
-//         { name: "Empanadas J&Q", price: 800, details: "unidad" },
-//         { name: "Chips y Snacks", price: 1200, details: "porción" }
-//       ]
-//     },
-//     principal: {
-//       title: "Plato Principal",
-//       items: [
-//         { name: "Asado", price: 5500, details: "porción" },
-//         { name: "Choripán", price: 2500 },
-//         { name: "Ensaladas Variadas", price: 1800 }
-//       ]
-//     },
-//     postre: {
-//       title: "Postre",
-//       items: [
-//         { name: "Helado", price: 2000, details: "2 bochas" },
-//         { name: "Torta de Chocolate", price: 1800, details: "porción" },
-//         { name: "Frutas de Estación", price: 1500 }
-//       ]
-//     }
-//   }
+  comidas: {
+    entrada: {
+      title: "Entrada",
+      items: [
+        { name: "Empanadas de Carne", price: 800, details: "unidad" },
+        { name: "Empanadas J&Q", price: 800, details: "unidad" },
+        { name: "Chips y Snacks", price: 1200, details: "porción" }
+      ]
+    },
+    principal: {
+      title: "Plato Principal",
+      items: [
+        { name: "Asado", price: 5500, details: "porción" },
+        { name: "Choripán", price: 2500 },
+        { name: "Ensaladas Variadas", price: 1800 }
+      ]
+    },
+    postre: {
+      title: "Postre",
+      items: [
+        { name: "Helado", price: 2000, details: "2 bochas" },
+        { name: "Torta de Chocolate", price: 1800, details: "porción" },
+        { name: "Frutas de Estación", price: 1500 }
+      ]
+    }
+  }
 }
 
 interface MenuSectionProps {
@@ -101,14 +102,15 @@ interface MenuModalProps {
   buttonText?: string
 }
 
-export function MenuModal({ data = defaultMenuData, buttonText = "Bebidas" }: MenuModalProps) {
+export function MenuModal({ data = defaultMenuData, buttonText = "Consumibles" }: MenuModalProps) {
   const hasBebidas = !!data.bebidas
   const hasComidas = !!data.comidas
   const [selectedTab, setSelectedTab] = useState<'bebidas' | 'comidas'>(hasBebidas ? 'bebidas' : 'comidas')
   
-  // Verificar si el contenido está activo
-  const contentActivationDate = new Date(theme.dates.contentActivation)
-  const isContentActive = new Date() >= contentActivationDate
+  // Usar el estado del Context para verificar si el contenido está activo
+  const { isDemoMode, isEventLive, isDarkMode, demoDates } = useDemoDates()
+  const contentActivationDate = isDemoMode ? new Date(demoDates.contentActivation) : new Date(theme.dates.contentActivation)
+  const isContentActive = isDemoMode ? isEventLive : (new Date() >= contentActivationDate)
 
   const getModalTitle = () => {
     if (hasBebidas && hasComidas) return "Bebidas y Comidas"
@@ -124,9 +126,9 @@ export function MenuModal({ data = defaultMenuData, buttonText = "Bebidas" }: Me
           <ShoppingCart className="mr-2 h-4 w-4" /> {buttonText}
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px] max-h-[500px] flex flex-col">
+      <DialogContent className={`sm:max-w-[425px] max-h-[500px] flex flex-col ${isDarkMode ? 'dark bg-gray-900 text-white' : ''}`}>
         <DialogHeader>
-          <DialogTitle className="text-center mb-4">{getModalTitle()}</DialogTitle>
+          <DialogTitle className={`text-center mb-4 ${isDarkMode ? 'text-white' : ''}`}>{getModalTitle()}</DialogTitle>
         </DialogHeader>
         
         {isContentActive ? (

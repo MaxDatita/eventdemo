@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { MapPin, Clock, Map, ArrowLeft, Route, X } from 'lucide-react'
 import Image from 'next/image'
 import { theme } from '@/config/theme'
+import { useDemoDates } from '@/contexts/DemoContext'
 
 interface Schedule {
   time: string
@@ -22,17 +23,20 @@ const defaultLogisticsData: LogisticsData = {
   googleMapsUrl: "https://maps.app.goo.gl/6GKZKzyWFRGa2bj19", // Tu URL de Google Maps
   venueMapUrl: "/map-event.webp", // La ruta a tu imagen del mapa del venue
   schedule: [
-    { time: "20:00", activity: "Apertura de puertas" },
-    { time: "21:00", activity: "Inicio de la ceremonia" },
-    { time: "22:00", activity: "Cena" },
-    { time: "23:30", activity: "Baile" },
-    { time: "03:00", activity: "Cierre del evento" },
-    { time: "03:00", activity: "Cierre del evento" },
-    { time: "03:00", activity: "Cierre del evento" },
-    { time: "03:00", activity: "Cierre del evento" },
-    { time: "03:00", activity: "Cierre del evento" },
-    { time: "03:00", activity: "Cierre del evento" },
-    { time: "03:00", activity: "Cierre del evento" },
+    { time: "19:30", activity: "Apertura de puertas y recepción" },
+    { time: "20:00", activity: "Cóctel de bienvenida" },
+    { time: "20:30", activity: "Presentación de invitados especiales" },
+    { time: "21:00", activity: "Ceremonia principal" },
+    { time: "21:30", activity: "Brindis y fotos" },
+    { time: "22:00", activity: "Cena de gala" },
+    { time: "23:00", activity: "Postre y café" },
+    { time: "23:30", activity: "Primera presentación musical" },
+    { time: "00:00", activity: "DJ set - Música electrónica" },
+    { time: "00:30", activity: "Barra libre de cócteles" },
+    { time: "01:00", activity: "Banda en vivo" },
+    { time: "01:30", activity: "Pista de baile abierta" },
+    { time: "02:00", activity: "Segundo DJ set" },
+    { time: "02:30", activity: "Cócteles especiales de medianoche" },
     { time: "03:00", activity: "Cierre del evento" }
   ]
 }
@@ -55,15 +59,17 @@ const MapModal = ({
   imageUrl: string
   onReturn: () => void
 }) => {
+  const { isDarkMode } = useDemoDates();
+  
   if (!isOpen) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px] p-0 overflow-hidden rounded-xl">
+      <DialogContent className={`sm:max-w-[425px] p-0 overflow-hidden rounded-xl ${isDarkMode ? 'dark bg-gray-900 text-white border-gray-700' : 'bg-white'}`}>
         <div className="relative w-full aspect-square">
           <Button 
             variant="secondary"
-            className="absolute right-2 top-2 z-10 bg-white/80 hover:bg-white/90 rounded-full"
+            className={`absolute right-2 top-2 z-10 rounded-full ${isDarkMode ? 'bg-gray-800/80 hover:bg-gray-700/90 text-white' : 'bg-white/80 hover:bg-white/90'}`}
             onClick={() => {
               onClose()
               onReturn()
@@ -86,11 +92,12 @@ const MapModal = ({
 };
 
 export function LogisticsModal({ data = defaultLogisticsData }: LogisticsModalProps) {
+  const { isDarkMode, isDemoMode, isEventLive, demoDates } = useDemoDates();
   const [contentType, setContentType] = useState<ContentType>('main')
   const [isOpen, setIsOpen] = useState(false)
   const [showMap, setShowMap] = useState(false)
-  const contentActivationDate = new Date(theme.dates.contentActivation)
-  const isContentActive = new Date() >= contentActivationDate
+  const contentActivationDate = isDemoMode ? new Date(demoDates.contentActivation) : new Date(theme.dates.contentActivation)
+  const isContentActive = isDemoMode ? isEventLive : (new Date() >= contentActivationDate)
 
   const handleOpenChange = (open: boolean) => {
     setIsOpen(open)
@@ -125,9 +132,9 @@ export function LogisticsModal({ data = defaultLogisticsData }: LogisticsModalPr
           <div className="flex flex-col h-full">
             <div className="flex-1 overflow-y-auto">
               <div className="space-y-4 p-4">
-                <div className="grid gap-4 max-h-[350px] pr-2">
+                <div className="grid gap-4 max-h-[350px] pr-2 mb-6">
                   {data.schedule.map((item, index) => (
-                    <div key={index} className="grid grid-cols-4 items-center gap-4">
+                    <div key={index} className={`grid grid-cols-4 items-center gap-4 ${isDarkMode ? 'text-white' : ''}`}>
                       <span className="font-bold">{item.time}</span>
                       <span className="col-span-3">{item.activity}</span>
                     </div>
@@ -135,7 +142,7 @@ export function LogisticsModal({ data = defaultLogisticsData }: LogisticsModalPr
                 </div>
               </div>
             </div>
-            <div className="p-4 border-t">
+            <div className={`p-4 border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
               <Button 
                 variant="secondary"
                 className="w-full flex items-center justify-center"
@@ -149,11 +156,11 @@ export function LogisticsModal({ data = defaultLogisticsData }: LogisticsModalPr
         ) : (
           <div className="flex flex-col h-full">
             <div className="flex-1 flex items-center justify-center p-4">
-              <p className="text-muted-foreground text-center">
+              <p className={`text-center ${isDarkMode ? 'text-gray-300' : 'text-muted-foreground'}`}>
                 El cronograma estará disponible más cerca de la fecha del evento.
               </p>
             </div>
-            <div className="p-4 border-t">
+            <div className={`p-4 border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
               <Button 
                 variant="secondary"
                 className="w-full flex items-center justify-center"
@@ -168,7 +175,7 @@ export function LogisticsModal({ data = defaultLogisticsData }: LogisticsModalPr
       
       default:
         return (
-          <div className="space-y-4 p-4">
+          <div className={`space-y-4 p-4 ${isDarkMode ? 'text-white' : ''}`}>
             <Button 
               variant="primary"
               className="w-full flex items-center justify-center"
@@ -208,9 +215,9 @@ export function LogisticsModal({ data = defaultLogisticsData }: LogisticsModalPr
             <Route className="mr-2 h-4 w-4" /> Logística
           </Button>
         </DialogTrigger>
-        <DialogContent className={`sm:max-w-[425px] ${getDialogHeight()} flex flex-col`}>
+        <DialogContent className={`sm:max-w-[425px] ${getDialogHeight()} flex flex-col ${isDarkMode ? 'dark bg-gray-900 text-white border-gray-700' : 'bg-white'}`}>
           <DialogHeader>
-            <DialogTitle>{contentType === 'schedule' ? "Cronograma del Evento" : "Logística del Evento"}</DialogTitle>
+            <DialogTitle className={isDarkMode ? 'text-white' : ''}>{contentType === 'schedule' ? "Cronograma del Evento" : "Logística del Evento"}</DialogTitle>
           </DialogHeader>
 
           <div className="flex-1 overflow-hidden">

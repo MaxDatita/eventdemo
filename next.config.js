@@ -29,7 +29,37 @@ const nextConfig = {
   },
   images: {
     unoptimized: true,
-    domains: ['eventechy.com', 'invitacion-v2.eventechy.com', 'invitametech-v2.vercel.app'],
+    domains: [
+      'eventechy.com', 
+      'invitacion-v2.eventechy.com', 
+      'invitametech-v2.vercel.app',
+      'drive.google.com',
+      'drive.usercontent.google.com',
+      'lh3.googleusercontent.com',
+      'lh4.googleusercontent.com',
+      'lh5.googleusercontent.com',
+      'lh6.googleusercontent.com'
+    ],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'drive.google.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'drive.usercontent.google.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'lh*.googleusercontent.com',
+        port: '',
+        pathname: '/**',
+      }
+    ],
   },
   webpack: (config, { isServer }) => {
     config.resolve.fallback = {

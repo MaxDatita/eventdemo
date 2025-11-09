@@ -8,6 +8,7 @@ import { Ticket, Plus, Minus, AlertCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import { checkTicketAvailability } from '@/lib/google-sheets-registros'
 import { theme } from '@/config/theme'
+import { useDemoDates } from '@/contexts/DemoContext'
 
 interface TicketType {
   id: string
@@ -32,6 +33,7 @@ const ticketTypes: TicketType[] = [
 ]
 
 export function TicketsModal({ onClose }: { onClose: () => void }) {
+  const { isDarkMode } = useDemoDates()
   const [selectedTicket, setSelectedTicket] = useState<string>('Regular')
   const [quantity, setQuantity] = useState<number>(1)
   const [remainingTickets, setRemainingTickets] = useState<number | null>(null)
@@ -49,14 +51,14 @@ export function TicketsModal({ onClose }: { onClose: () => void }) {
     const checkAvailability = async () => {
       setIsLoadingAvailability(true);
       try {
-        const result = await checkTicketAvailability(selectedTicket, 1);
-        setRemainingTickets(result.remainingTickets);
-        if (result.remainingTickets !== -1 && quantity > result.remainingTickets) {
-          setQuantity(result.remainingTickets);
-        }
+        // DEMO: Simular verificación de disponibilidad
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // DEMO: Simular disponibilidad ilimitada
+        setRemainingTickets(-1); // -1 significa disponibilidad ilimitada
       } catch (error) {
         console.error('Error al verificar disponibilidad:', error);
-        toast.error('Error al verificar disponibilidad');
+        setRemainingTickets(-1); // En caso de error, asumir disponibilidad ilimitada
       } finally {
         setIsLoadingAvailability(false);
       }
@@ -79,30 +81,17 @@ export function TicketsModal({ onClose }: { onClose: () => void }) {
       return
     }
 
-
     setIsSubmitting(true)
     try {
-      const response = await fetch('/api/payment', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ticketType: selectedTicket,
-          quantity,
-          unitPrice: selectedTicketType?.price || 0,
-          name: buyerInfo.name,
-          email: buyerInfo.email,
-          title: selectedTicketType?.name,
-        }),
-      });
-
-      if (!response.ok) throw new Error('Error creating payment');
+      // DEMO: Simular procesamiento de pago
+      await new Promise(resolve => setTimeout(resolve, 1500)); // Simular delay de red
       
-      const data = await response.json();
+      toast.success('Redirigiendo a MercadoPago...')
       
-      // Redirigir al checkout de MercadoPago
-      window.location.href = data.init_point;
+      // Cerrar el modal después de un breve delay
+      setTimeout(() => {
+        onClose()
+      }, 2000)
       
     } catch (error) {
       console.error('Error:', error)
@@ -113,9 +102,9 @@ export function TicketsModal({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="grid gap-4">
+    <form onSubmit={handleSubmit} className={`grid gap-4 ${isDarkMode ? 'text-white bg-gray-900 border-gray-700' : 'bg-white'}`}>
       <div className="space-y-2">
-        <label className="text-sm font-medium">Tipo de Ticket</label>
+        <label className={`text-sm font-medium ${isDarkMode ? 'text-white' : ''}`}>Tipo de Ticket</label>
         <div className="grid grid-cols-2 gap-2">
           {ticketTypes.map((ticket) => (
             <Button
@@ -135,7 +124,7 @@ export function TicketsModal({ onClose }: { onClose: () => void }) {
       </div>
 
       <div className="space-y-2">
-        <label className="text-sm font-medium">Cantidad</label>
+        <label className={`text-sm font-medium ${isDarkMode ? 'text-white' : ''}`}>Cantidad</label>
         {remainingTickets !== null && remainingTickets <= 10 && remainingTickets > 0 && (
           <div className="flex items-center gap-2 text-yellow-500 mb-2">
             <AlertCircle className="h-4 w-4" />
@@ -154,7 +143,7 @@ export function TicketsModal({ onClose }: { onClose: () => void }) {
                 setQuantity(validateQuantity(value));
               }
             }}
-            className="text-center"
+            className={`text-center ${isDarkMode ? 'bg-gray-800 text-white border-gray-600' : ''}`}
             disabled={isLoadingAvailability}
           />
           <div className="flex">
@@ -181,35 +170,37 @@ export function TicketsModal({ onClose }: { onClose: () => void }) {
       </div>
 
       <div className="space-y-2">
-        <label className="text-sm font-medium">Nombre</label>
+        <label className={`text-sm font-medium ${isDarkMode ? 'text-white' : ''}`}>Nombre</label>
         <Input
           placeholder="Tu nombre completo"
           value={buyerInfo.name}
           onChange={(e) => setBuyerInfo(prev => ({ ...prev, name: e.target.value }))}
           required
+          className={isDarkMode ? 'bg-gray-800 text-white border-gray-600' : ''}
         />
       </div>
 
       <div className="space-y-2">
-        <label className="text-sm font-medium">Email</label>
+        <label className={`text-sm font-medium ${isDarkMode ? 'text-white' : ''}`}>Email</label>
         <Input
           type="email"
           placeholder="tu@email.com"
           value={buyerInfo.email}
           onChange={(e) => setBuyerInfo(prev => ({ ...prev, email: e.target.value }))}
           required
+          className={isDarkMode ? 'bg-gray-800 text-white border-gray-600' : ''}
         />
       </div>
 
       <div>
-        <p className="text-sm text-justify">
+        <p className={`text-sm text-justify ${isDarkMode ? 'text-white' : ''}`}>
           <span>
-            <span className="font-bold">Nota:</span> Asegúrate de que los datos sean correctos para recibir tus tickets. Pago administrado por <span className="text-gray-400 font-bold">MercadoPago</span>.
+            <span className="font-bold">Nota:</span> Asegúrate de que los datos sean correctos para recibir tus tickets. Pago administrado por <span className={`font-bold ${isDarkMode ? 'text-gray-300' : 'text-gray-400'}`}>MercadoPago</span>.
           </span>
         </p>
       </div>
 
-      <div className="py-2 text-lg font-semibold border-t">
+      <div className={`py-2 text-lg font-semibold border-t ${isDarkMode ? 'text-white border-gray-600' : ''}`}>
         Total a pagar: ${total}
       </div>
 

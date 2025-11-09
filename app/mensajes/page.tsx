@@ -49,9 +49,15 @@ export default function MensajesPage() {
       <div className="w-full max-w-4xl mx-auto">
        
         {/* Título */}
-        <h1 className="heading-h1 text-center mb-8 text-cyan-200">
+        <h1 className="heading-h1 text-center mb-2 text-cyan-200">
           Mensajes de los invitados
         </h1>
+        {/* Badge Modo Demo */}
+        <div className="mb-6 flex justify-center">
+          <div className="bg-purple-600 text-white px-3 py-1 rounded-full backdrop-blur-sm shadow-lg">
+            <span className="text-xs font-bold">MODO DEMO</span>
+          </div>
+        </div>
 
         {/* Carrusel de mensajes */}
         <div className="relative bg-white/10 backdrop-blur-sm rounded-xl p-8 shadow-xl min-h-[300px] flex items-center justify-center">
@@ -66,7 +72,7 @@ export default function MensajesPage() {
                 &ldquo;{message.mensaje}&rdquo;
               </p>
               <p className="text-xl font-medium text-white/80">
-                - {message.nombre}
+                {message.nombre}
               </p>
             </div>
           ))}

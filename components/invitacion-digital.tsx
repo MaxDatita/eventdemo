@@ -5,17 +5,22 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { MessageSquare, MailPlus, Image as ImageIcon, Ticket } from 'lucide-react'
+import { MessageSquare, MailPlus, Image as ImageIcon, Ticket, Camera, Film, Users } from 'lucide-react'
 import Image from 'next/image'
-import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
 import { theme } from '@/config/theme';
 import { StyledDialog } from "@/components/ui/styled-dialog"
 import { MenuModal } from "@/components/ui/menu-modal"
 import { LogisticsModal } from "@/components/ui/logistics-modal"
 import { TicketsModal } from "@/components/ui/tickets-modal"
+import { RsvpModal } from "@/components/ui/rsvp-modal"
+import { ProvidersModal } from "@/components/ui/providers-modal"
 import { Card } from "@/components/ui/card"
+import { PhotoCameraModal } from "@/components/photo-camera-modal"
+import { PhotoWall } from "@/components/photo-wall"
 import { toast } from 'sonner'
-import { checkTicketAvailability } from '@/lib/google-sheets-registros'
+import { demoMessages, DemoMessage } from '@/data/demo-messages'
+import { useDemoDates } from '@/contexts/DemoContext'
+import { UserCheck } from 'lucide-react'
 
 
 const gradientColors = [
@@ -35,6 +40,7 @@ const getConsistentGradient = (name: string) => {
   const hash = name.split('').reduce((acc, char) => char.charCodeAt(0) + acc, 0);
   return gradientColors[hash % gradientColors.length];
 }
+
 
 const InitialsCircle = ({ name }: { name: string }) => {
   const initials = name ? name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : ''
@@ -58,20 +64,22 @@ interface MessageCardProps {
 
 // Componente para mostrar un mensaje en el carrusel
 const MessageCard: React.FC<MessageCardProps> = ({ message, onClick }) => {
+  const { isDarkMode } = useDemoDates();
+  
   return (
     <div 
-      className="message-card"
+      className={`message-card ${isDarkMode ? 'bg-gray-800 border-gray-700' : ''}`}
       onClick={onClick}
     >
       <div className="flex items-center mb-2">
         <div className="flex-shrink-0">
           <InitialsCircle name={message.nombre} />
         </div>
-        <span className="font-semibold truncate overflow-hidden flex-1">
+        <span className={`font-semibold truncate overflow-hidden flex-1 ${isDarkMode ? 'text-white' : ''}`}>
           {message.nombre}
         </span>
       </div>
-      <p className="message-card-content">
+      <p className={`message-card-content ${isDarkMode ? 'text-gray-200' : ''}`}>
         {message.mensaje}
       </p>
     </div>
@@ -109,50 +117,33 @@ export function InvitacionDigitalComponent() {
   const [showLive, setShowLive] = useState(false)
   const [showExpirationModal, setShowExpirationModal] = useState(false);
   const [showTicketsModal, setShowTicketsModal] = useState(false);
+  const [showRsvpModal, setShowRsvpModal] = useState(false);
+  const [showPhotoCamera, setShowPhotoCamera] = useState(false);
+  const [showPhotoWall, setShowPhotoWall] = useState(false);
+  const [showContentModal, setShowContentModal] = useState(false);
   const [isRsvpActive, setIsRsvpActive] = useState(true);
   const [ticketAvailability, setTicketAvailability] = useState<{[key: string]: number}>({})
   const [isCheckingAvailability, setIsCheckingAvailability] = useState(true);
 
-  const eventDate = useMemo(() => new Date(theme.dates.event), []);
-  const contentActivationDate = new Date(theme.dates.contentActivation);
-  const liveEndDate = useMemo(() => new Date(theme.dates.liveEnd), []);
+  // DEMO: Usar fechas del hook de demo solo cuando se active el modo demo
+  const { demoDates, isDemoMode, isCountdownActive, isEventLive, isDarkMode, rsvpMode } = useDemoDates();
+  
+  
+  const eventDate = useMemo(() => {
+    return isDemoMode ? new Date(demoDates.event) : new Date(theme.dates.event);
+  }, [demoDates.event, isDemoMode]);
+  
+  const contentActivationDate = useMemo(() => {
+    return isDemoMode ? new Date(demoDates.contentActivation) : new Date(theme.dates.contentActivation);
+  }, [demoDates.contentActivation, isDemoMode]);
+  const liveEndDate = useMemo(() => {
+    return isDemoMode ? new Date(demoDates.liveEnd) : new Date(theme.dates.liveEnd);
+  }, [demoDates.liveEnd, isDemoMode]);
 
-  // Query para el carrusel (aleatoria)
-  const carouselQuery = useQuery({
-    queryKey: ['messages', 'carousel'],
-    queryFn: async () => {
-      const response = await fetch('/api/messages?random=true');
-      if (!response.ok) throw new Error('Network response was not ok');
-      return response.json();
-    },
-    refetchInterval: 5 * 60 * 1000, // Refrescar cada 5 minutos
-  });
 
-  // Query para todos los mensajes (paginada)
-  const { 
-    data: allMessagesData, 
-    fetchNextPage, 
-    hasNextPage, 
-    isFetchingNextPage,
-    refetch: refetchAllMessages
-  } = useInfiniteQuery({
-    queryKey: ['messages', 'all'],
-    queryFn: async ({ pageParam = 1 }) => {
-      const response = await fetch(`/api/messages?page=${pageParam}&pageSize=${pageSize}`);
-      if (!response.ok) throw new Error('Network response was not ok');
-      const data = await response.json();
-      return {
-        messages: data.messages,
-        hasMore: data.hasMore,
-        nextPage: pageParam + 1
-      };
-    },
-    getNextPageParam: (lastPage) => lastPage.hasMore ? lastPage.nextPage : undefined,
-    initialPageParam: 1
-  });
-
-  const carouselMessages = carouselQuery.data?.messages || [];
-  const allMessages = allMessagesData?.pages.flatMap(page => page.messages) || [];
+  // DEMO: Usar mensajes ficticios en lugar de API
+  const carouselMessages = demoMessages;
+  const allMessages = demoMessages;
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -161,11 +152,29 @@ export function InvitacionDigitalComponent() {
       const difference = eventDate.getTime() - now.getTime()
       const liveEndDifference = liveEndDate.getTime() - now.getTime()
 
-      if (difference <= 0 && liveEndDifference > 0) {
-        setEventStarted(true)
-        setShowLive(true)
-      } else if (liveEndDifference <= 0) {
-        setShowLive(false)
+      // En modo demo, usar isEventLive del hook
+      if (isDemoMode) {
+        if (isEventLive) {
+          setEventStarted(true)
+          setShowLive(true)
+        } else {
+          setEventStarted(false)
+          setShowLive(false)
+        }
+      } else {
+        // Lógica normal para modo no-demo
+        if (difference <= 0 && liveEndDifference > 0) {
+          setEventStarted(true)
+          setShowLive(true)
+        } else if (liveEndDifference <= 0) {
+          setShowLive(false)
+        }
+
+        if (difference <= 0) {
+          setEventStarted(true)
+          setShowUpdateButton(true)
+          clearInterval(interval)
+        }
       }
 
       if (difference <= 0) {
@@ -173,16 +182,23 @@ export function InvitacionDigitalComponent() {
         setShowUpdateButton(true)
         clearInterval(interval)
       } else {
-        const d = Math.floor(difference / (1000 * 60 * 60 * 24))
-        const h = Math.floor((difference / (1000 * 60 * 60)) % 24)
-        const m = Math.floor((difference / 1000 / 60) % 60)
-        const s = Math.floor((difference / 1000) % 60)
-        setCountdown({ days: d, hours: h, minutes: m, seconds: s })
+        // Si está activo el contador de demo de 3 segundos
+        if (isDemoMode && isCountdownActive) {
+          const demoCountdown = Math.max(0, Math.ceil(difference / 1000))
+          setCountdown({ days: 0, hours: 0, minutes: 0, seconds: demoCountdown })
+        } else {
+          // Contador normal
+          const d = Math.floor(difference / (1000 * 60 * 60 * 24))
+          const h = Math.floor((difference / (1000 * 60 * 60)) % 24)
+          const m = Math.floor((difference / 1000 / 60) % 60)
+          const s = Math.floor((difference / 1000) % 60)
+          setCountdown({ days: d, hours: h, minutes: m, seconds: s })
+        }
       }
     }, 1000)
 
     return () => clearInterval(interval)
-  }, [eventDate, liveEndDate])
+  }, [eventDate, liveEndDate, isDemoMode, isCountdownActive, isEventLive]) // Usar las fechas calculadas directamente
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -210,7 +226,7 @@ export function InvitacionDigitalComponent() {
     }
   }, [eventStarted, carouselMessages.length])
 
-  const isContentActive = currentDate >= contentActivationDate
+  const isContentActive = isDemoMode ? isEventLive : (currentDate >= contentActivationDate)
 
   const handleMessageClick = useCallback((message: { id: number; nombre: string; mensaje: string }) => {
     setSelectedMessage({
@@ -225,57 +241,39 @@ export function InvitacionDigitalComponent() {
 
     setIsSubmitting(true);
     try {
-      const now = new Date();
-      const fecha = now.toLocaleString('es-ES', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-
-      const response = await fetch('/api/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          fecha,
-          nombre: newMessage.nombre,
-          mensaje: newMessage.mensaje
-        }),
-      });
-
-      if (!response.ok) throw new Error('Error al enviar el mensaje');
-
+      // DEMO: Simular envío de mensaje
+      await new Promise(resolve => setTimeout(resolve, 1500)); // Simular delay de red
+      
+      toast.success('¡Mensaje enviado!');
       setNewMessage({ nombre: '', mensaje: '' });
       setIsMessageDialogOpen(false);
-      await carouselQuery.refetch();
-      await refetchAllMessages();
     } catch (error) {
       console.error('Error:', error);
+      toast.error('Error al enviar el mensaje');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Función para verificar disponibilidad de tickets
+  // DEMO: Simular disponibilidad de tickets
   const checkAllTicketsAvailability = useCallback(async () => {
     try {
-      const availability: {[key: string]: number} = {};
+      // Simular delay de red
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      for (const ticket of theme.tickets.types) {
-        const result = await checkTicketAvailability(ticket.id, 1);
-        availability[ticket.id] = result.remainingTickets;
-      }
+      // DEMO: Simular disponibilidad ilimitada
+      const availability: {[key: string]: number} = {};
+      theme.tickets.types.forEach(ticket => {
+        availability[ticket.id] = -1; // -1 significa disponibilidad ilimitada
+      });
       
       setTicketAvailability(availability);
     } catch (error) {
       console.error('Error al verificar disponibilidad:', error);
-      // En caso de error, asumimos que no hay tickets disponibles
+      // En caso de error, asumimos disponibilidad ilimitada
       const errorAvailability: {[key: string]: number} = {};
       theme.tickets.types.forEach(ticket => {
-        errorAvailability[ticket.id] = 0;
+        errorAvailability[ticket.id] = -1;
       });
       setTicketAvailability(errorAvailability);
     }
@@ -286,8 +284,10 @@ export function InvitacionDigitalComponent() {
     const checkStatus = async () => {
       try {
         const now = new Date();
-        const rsvpDeadline = new Date(theme.dates.rsvpDeadline);
+        const rsvpDeadline = isDemoMode ? new Date(demoDates.rsvpDeadline) : new Date(theme.dates.rsvpDeadline);
         const isActive = now <= rsvpDeadline;
+        
+        
         setIsRsvpActive(isActive);
         
         if (isActive && theme.tickets.lotes.enabled) {
@@ -304,17 +304,12 @@ export function InvitacionDigitalComponent() {
     checkStatus();
     const intervalId = setInterval(checkStatus, 30 * 60 * 1000);
     return () => clearInterval(intervalId);
-  }, []);
+  }, [demoDates.rsvpDeadline, isDemoMode, isEventLive]); // Dependencia de fechas de demo y modo demo
 
   // Función para verificar si la fecha está vencida (en tiempo real)
   const isDeadlinePassed = () => {
     const now = new Date();
-    const rsvpDeadline = new Date(theme.dates.rsvpDeadline);
-    console.log('Verificando fecha límite:', {
-      ahora: now.toLocaleString(),
-      fechaLimite: rsvpDeadline.toLocaleString(),
-      estaVencido: now > rsvpDeadline
-    });
+    const rsvpDeadline = isDemoMode ? new Date(demoDates.rsvpDeadline) : new Date(theme.dates.rsvpDeadline);
     return now > rsvpDeadline;
   };
 
@@ -350,11 +345,16 @@ export function InvitacionDigitalComponent() {
       <div className="bg-gradient-animation" />
       <div className="content-container">
         {eventStarted && showLive && (
-          <div className="live-indicator">
+          <div className="live-indicator mr-16 mt-1">
             <div className="live-dot"></div>
             <span className="text-sm font-bold">LIVE</span>
           </div>
         )}
+        
+        {/* DEMO: Badge de modo demo */}
+        <div className="demo-badge">
+          <span className="text-xs font-bold">MODO DEMO</span>
+        </div>
         
         <div className="w-full max-w-md mx-auto rounded-xl">
           <video
@@ -383,7 +383,7 @@ export function InvitacionDigitalComponent() {
             Celebremos Juntos
           </h1> */}
 
-          <div className="relative w-full h-[50vh] mb-4 rounded-xl overflow-hidden">
+          <div className="relative w-full aspect-square mb-4 rounded-xl overflow-hidden">
             {theme.resources.images.carousel.map((src, index) => (
               <Image
                 key={index}
@@ -403,22 +403,16 @@ export function InvitacionDigitalComponent() {
 
           {eventStarted ? (
             <div className="mb-6">
-              {carouselQuery.isLoading ? (
-                <div className="flex justify-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-700" />
-                </div>
-              ) : carouselQuery.error ? (
-                <p className='text-center mt-12 mb-12'>Error al cargar mensajes</p>
-              ) : carouselMessages.length === 0 ? (
-                <p className='text-center mt-12 mb-12'>Sé el primero en dejar un mensaje</p>
+              {carouselMessages.length === 0 ? (
+                <p className={`text-center mt-12 mb-12 ${isDarkMode ? 'text-white' : ''}`}>Sé el primero en dejar un mensaje</p>
               ) : (
                 <>
                   <div ref={carouselRef} className="overflow-x-hidden whitespace-nowrap">
                     <div className="inline-flex gap-4" style={{ width: `${carouselMessages.length * 272 * 2}px` }}>
-                      {carouselMessages.map((message: CarouselMessage) => (
+                      {carouselMessages.map((message: DemoMessage) => (
                         <MessageCard key={message.id} message={message} onClick={() => handleMessageClick(message)} />
                       ))}
-                      {carouselMessages.map((message: CarouselMessage) => (
+                      {carouselMessages.map((message: DemoMessage) => (
                         <MessageCard key={`duplicate-${message.id}`} message={message} onClick={() => handleMessageClick(message)} />
                       ))}
                     </div>
@@ -442,18 +436,20 @@ export function InvitacionDigitalComponent() {
                 Te esperamos este {eventDate.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}  
                 , {eventDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', hour12: false })}hs para pasar una noche inolvidable.
               </div>
-              <div className='body-base text-center mb-2'> Faltan: </div>
+              <div className='body-base text-center mb-2'> 
+                {isDemoMode && isCountdownActive ? 'Iniciando evento en:' : 'Faltan:'} 
+              </div>
               <div className="countdown-container">
                 <div className="countdown-item">
-                  <span className="countdown-number">{countdown.days}</span>
+                  <span className="countdown-number">{isDemoMode && isCountdownActive ? 0 : countdown.days}</span>
                   <p className="countdown-label">Días</p>
                 </div>
                 <div className="countdown-item">
-                  <span className="countdown-number">{countdown.hours}</span>
+                  <span className="countdown-number">{isDemoMode && isCountdownActive ? 0 : countdown.hours}</span>
                   <p className="countdown-label">Horas</p>
                 </div>
                 <div className="countdown-item">
-                  <span className="countdown-number">{countdown.minutes}</span>
+                  <span className="countdown-number">{isDemoMode && isCountdownActive ? 0 : countdown.minutes}</span>
                   <p className="countdown-label">Minutos</p>
                 </div>
                 <div className="countdown-item">
@@ -469,10 +465,21 @@ export function InvitacionDigitalComponent() {
             <MenuModal />
             <StyledDialog 
               title="Contenido del Evento"
+              open={showContentModal}
+              onOpenChange={(newOpen) => {
+                // Si hay modales hijos abiertos, no cerrar el modal de contenido
+                if (!newOpen && (showPhotoCamera || showPhotoWall)) {
+                  // No cerrar si hay modales hijos abiertos
+                  return;
+                }
+                setShowContentModal(newOpen);
+              }}
+              preventCloseWhenChildrenOpen={showPhotoCamera || showPhotoWall}
               trigger={
                 <Button 
                   variant="primary" 
                   className="flex items-center justify-center"
+                  onClick={() => setShowContentModal(true)}
                 >
                   <ImageIcon className="mr-2 h-4 w-4" /> Contenido
                 </Button>
@@ -481,20 +488,81 @@ export function InvitacionDigitalComponent() {
               <div className="grid gap-4">
                 {isContentActive ? (
                   <div className="flex flex-col items-center gap-4">
-                    <p className="text-center">
-                      Mirá todo el contenido multimedia del evento en un solo lugar. Fotos, videos, reels para Instagram y mucho más 🤳🏼📸😉
+                    <p className="text-center text-sm opacity-80">
+                      Explora y comparte contenido del evento
                     </p>
-                    <Button
-                      variant="primary"
-                      className="w-full button-with-icon"
-                      onClick={() => window.open(theme.resources.contentLink, "_blank")}
-                    >
-                      <ImageIcon className="button-icon" />
-                      <span>Acceder al contenido</span>
-                    </Button>
+                    
+                    {/* Botón Principal: Contenido Oficial */}
+                    <div className="w-full space-y-2">
+                      <Button
+                        variant="primary"
+                        className="w-full flex items-center justify-center gap-2 py-6"
+                        onClick={() => window.open(theme.resources.contentLink, "_blank")}
+                      >
+                        <Film className="h-5 w-5" />
+                        <span className="font-semibold">Contenido Oficial</span>
+                      </Button>
+                      <p className="text-xs text-center opacity-70 px-2">
+                        Fotos profesionales, videos y reels del evento
+                      </p>
+                    </div>
+
+                    {/* Botones Secundarios */}
+                    <div className="grid grid-cols-2 gap-3 w-full">
+                      {/* Galería de Invitados */}
+                      <div className="space-y-1">
+                        <Button
+                          variant="secondary"
+                          className="w-full flex flex-col items-center justify-center gap-2 py-4 h-auto"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowPhotoWall(true);
+                          }}
+                        >
+                          <Users className="h-5 w-5" />
+                          <span className="text-sm font-medium">Galería de Invitados</span>
+                        </Button>
+                        <p className="text-xs text-center opacity-70">
+                          Fotos compartidas por participantes
+                        </p>
+                      </div>
+
+                      {/* Compartir mi Foto */}
+                      <div className="space-y-1">
+                        <Button
+                          variant="secondary"
+                          className="w-full flex flex-col items-center justify-center gap-2 py-4 h-auto"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowPhotoCamera(true);
+                          }}
+                        >
+                          <Camera className="h-5 w-5" />
+                          <span className="text-sm font-medium">Compartir mi Foto</span>
+                        </Button>
+                        <p className="text-xs text-center opacity-70">
+                          Sube tu foto del evento
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 ) : (
-                  <p>El contenido del evento estará disponible más cerca de la fecha del evento. Quedá atento a las actualizaciones ⏳.</p>
+                  <div className="flex flex-col items-center gap-4">
+                    <p className="text-center">
+                      Mirá el contenido previo del evento. El contenido completo estará disponible más cerca de la fecha del evento ⏳.
+                    </p>
+                    <Button
+                      variant="secondary"
+                      className="w-full flex items-center justify-center"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowPhotoWall(true);
+                      }}
+                    >
+                      <ImageIcon className="mr-2 h-4 w-4" />
+                      <span>Ver Fotos Previas</span>
+                    </Button>
+                  </div>
                 )}
               </div>
             </StyledDialog>
@@ -568,54 +636,96 @@ export function InvitacionDigitalComponent() {
                   </DialogContent>
                 </Dialog>
 
-                <div className="col-span-2 space-y-2">
-                  {theme.tickets.lotes.enabled && isCheckingAvailability ? (
-                    <Button
-                      variant="primary"
-                      className="w-full flex items-center justify-center"
-                      disabled
-                    >
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                      Verificando disponibilidad...
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="primary"
-                      className="w-full flex items-center justify-center"
-                      onClick={handleTicketButtonClick}
-                      disabled={theme.tickets.lotes.enabled && Object.values(ticketAvailability).every(
-                        remaining => remaining !== -1 && remaining <= 0
-                      )}
-                    >
-                      <Ticket className="mr-2 h-4 w-4" />
-                      {theme.tickets.lotes.enabled && Object.values(ticketAvailability).every(
-                        remaining => remaining !== -1 && remaining <= 0
-                      )
-                        ? theme.tickets.lotes.soldOutMessage
-                        : 'Comprar Tickets'
-                      }
-                    </Button>
-                  )}
-                  
-                  {!isCheckingAvailability && 
-                   theme.tickets.lotes.enabled && 
-                   Object.values(ticketAvailability).every(remaining => remaining !== -1 && remaining <= 0) && 
-                   theme.tickets.lotes.nextLotMessage && (
-                    <p className="body-small-alt text-center text-opacity-90">
-                      {theme.tickets.lotes.nextLotMessage}
-                    </p>
-                  )}
-                </div>
+                {/* Determinar qué botones mostrar según la configuración */}
+                {(() => {
+                  // En modo demo, usar el modo del contexto; si no, usar el del theme
+                  const buttonMode = isDemoMode ? rsvpMode : theme.rsvpButton.mode;
+                  const shouldShowBoth = buttonMode === 'both' && isDemoMode;
+                  const shouldShowTickets = buttonMode === 'tickets' || shouldShowBoth;
+                  const shouldShowRsvp = buttonMode === 'rsvp' || shouldShowBoth;
 
+                  return (
+                    <div className={`col-span-2 space-y-2`}>
+                      {/* Botón de Comprar Tickets */}
+                      {shouldShowTickets && (
+                        <>
+                          {theme.tickets.lotes.enabled && isCheckingAvailability ? (
+                            <Button
+                              variant="primary"
+                              className="w-full flex items-center justify-center"
+                              disabled
+                            >
+                              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                              Verificando disponibilidad...
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="primary"
+                              className="w-full flex items-center justify-center"
+                              onClick={handleTicketButtonClick}
+                              disabled={theme.tickets.lotes.enabled && Object.values(ticketAvailability).every(
+                                remaining => remaining !== -1 && remaining <= 0
+                              )}
+                            >
+                              <Ticket className="mr-2 h-4 w-4" />
+                              {theme.tickets.lotes.enabled && Object.values(ticketAvailability).every(
+                                remaining => remaining !== -1 && remaining <= 0
+                              )
+                                ? theme.tickets.lotes.soldOutMessage
+                                : 'Comprar Tickets'
+                              }
+                            </Button>
+                          )}
+                          
+                          {!isCheckingAvailability && 
+                           theme.tickets.lotes.enabled && 
+                           Object.values(ticketAvailability).every(remaining => remaining !== -1 && remaining <= 0) && 
+                           theme.tickets.lotes.nextLotMessage && (
+                            <p className="body-small-alt text-center text-opacity-90">
+                              {theme.tickets.lotes.nextLotMessage}
+                            </p>
+                          )}
+                        </>
+                      )}
+
+                      {/* Botón de Confirmar Asistencia */}
+                      {shouldShowRsvp && (
+                        <Button
+                          variant="primary"
+                          className="w-full flex items-center justify-center"
+                          onClick={() => setShowRsvpModal(true)}
+                        >
+                          <UserCheck className="mr-2 h-4 w-4" />
+                          Confirmar Asistencia
+                        </Button>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {/* Modal de Tickets */}
                 <Dialog 
                   open={showTicketsModal} 
                   onOpenChange={setShowTicketsModal}
                 >
-                  <DialogContent className="sm:max-w-[425px]">
+                  <DialogContent className={`sm:max-w-[425px] ${isDarkMode ? 'dark bg-gray-900 text-white border-gray-700' : 'bg-white'}`}>
                     <DialogHeader>
-                      <DialogTitle>Comprar Tickets</DialogTitle>
+                      <DialogTitle className={`${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Comprar Tickets</DialogTitle>
                     </DialogHeader>
                     <TicketsModal onClose={() => setShowTicketsModal(false)} />
+                  </DialogContent>
+                </Dialog>
+
+                {/* Modal de Confirmar Asistencia */}
+                <Dialog 
+                  open={showRsvpModal} 
+                  onOpenChange={setShowRsvpModal}
+                >
+                  <DialogContent className={`sm:max-w-[425px] ${isDarkMode ? 'dark bg-gray-900 text-white border-gray-700' : 'bg-white'}`}>
+                    <DialogHeader>
+                      <DialogTitle className={`${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Confirmar Asistencia</DialogTitle>
+                    </DialogHeader>
+                    <RsvpModal onClose={() => setShowRsvpModal(false)} />
                   </DialogContent>
                 </Dialog>
               </>
@@ -637,35 +747,25 @@ export function InvitacionDigitalComponent() {
               {selectedMessage?.nombre === 'Todos los mensajes' ? (
                 <div className="space-y-4 max-h-[60vh] overflow-y-auto">
                   {allMessages.map((message) => (
-                    <div key={message.id} className="flex items-start p-2 bg-white rounded-lg shadow">
+                    <div key={message.id} className={`flex items-start p-2 rounded-lg shadow border rounded-xl mr-2 ${isDarkMode ? 'bg-gray-800 text-white border-gray-700' : 'bg-white border-gray-200'}`}>
                       <div className="flex-shrink-0">
                         <InitialsCircle name={message.nombre} />
                       </div>
                       <div className="ml-3 flex-grow">
-                        <h3 className="font-semibold">{message.nombre}</h3>
-                        <p className="text-sm whitespace-normal break-words">{message.mensaje}</p>
+                        <h3 className={`font-semibold ${isDarkMode ? 'text-white' : ''}`}>{message.nombre}</h3>
+                        <p className={`text-sm whitespace-normal break-words ${isDarkMode ? 'text-gray-200' : ''}`}>{message.mensaje}</p>
                       </div>
                     </div>
                   ))}
-                  {hasNextPage && (
-                    <Button 
-                      onClick={() => fetchNextPage()} 
-                      variant="primary" 
-                      className="w-full mt-4"
-                      disabled={isFetchingNextPage}
-                    >
-                      {isFetchingNextPage ? 'Cargando más mensajes...' : 'Ver más mensajes'}
-                    </Button>
-                  )}
                 </div>
               ) : (
-                <p>{selectedMessage?.mensaje}</p>
+                <p className={isDarkMode ? 'text-white' : ''}>{selectedMessage?.mensaje}</p>
               )}
             </div>
           </DialogContent>
         </Dialog>
 
-        <div className="mt-8 flex justify-center">
+        <div className="mt-8 flex flex-col items-center">
           <a 
             href="https://eventechy.com" 
             target="_blank" 
@@ -680,7 +780,28 @@ export function InvitacionDigitalComponent() {
               className="rounded-lg"
             />
           </a>
+          <ProvidersModal />
         </div>
+
+        <PhotoCameraModal 
+          isOpen={showPhotoCamera} 
+          onClose={() => {
+            // Primero asegurar que el modal de contenido esté abierto
+            setShowContentModal(true);
+            // Luego cerrar el modal de cámara
+            setShowPhotoCamera(false);
+          }} 
+        />
+        
+        <PhotoWall 
+          isOpen={showPhotoWall} 
+          onClose={() => {
+            // Primero asegurar que el modal de contenido esté abierto
+            setShowContentModal(true);
+            // Luego cerrar el modal de galería
+            setShowPhotoWall(false);
+          }} 
+        />
       </div>
     </>
   )

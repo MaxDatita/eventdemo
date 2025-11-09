@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Toaster } from "sonner";
 import "./globals.css";
 import Providers from './providers'
+import { PreconnectLinks } from '@/components/preconnect-links'
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL!),
@@ -49,6 +50,7 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body>
+        <PreconnectLinks />
         <Providers>
           {children}
           <Toaster />

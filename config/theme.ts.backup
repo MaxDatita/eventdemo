@@ -92,7 +92,7 @@ export const theme = {
 
   // Configuración del botón principal (tickets o confirmar asistencia)
   rsvpButton: {
-    mode: 'rsvp', // 'tickets' | 'rsvp' | 'both' (both solo funciona en modo demo)
+    mode: 'tickets', // 'tickets' | 'rsvp' | 'both' (both solo funciona en modo demo)
     // mode: 'tickets' - muestra solo el botón de comprar tickets
     // mode: 'rsvp' - muestra solo el botón de confirmar asistencia
     // mode: 'both' - muestra ambos botones (solo en modo demo)
