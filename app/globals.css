@@ -75,9 +75,33 @@
   @supports (-webkit-touch-callout: none) {
     body {
       background-attachment: scroll;
-      /* Asegurar que el body cubra todo el contenido cuando hay scroll */
-      min-height: auto;
-      height: auto;
+      /* En iOS, el body debe tener altura suficiente para cubrir todo el contenido */
+      position: relative;
+      /* Usar pseudo-elemento para fondo que siempre cubra todo */
+      overflow-x: hidden;
+    }
+    
+    /* Pseudo-elemento para fondo en iOS que cubra todo el contenido */
+    body::before {
+      content: '';
+      position: fixed;
+      top: -500px;
+      left: 0;
+      right: 0;
+      bottom: -500px;
+      width: 100%;
+      height: calc(100% + 1000px);
+      min-height: calc(100vh + 1000px);
+      min-height: calc(100dvh + 1000px);
+      background: linear-gradient(140deg, 
+        #000000 0%,
+        #471069 55%,
+        #196E76 100%
+      );
+      background-size: cover;
+      background-position: center;
+      z-index: -2;
+      pointer-events: none;
     }
     
     html {
