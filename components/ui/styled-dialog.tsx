@@ -66,7 +66,7 @@ export const StyledDialog = ({
         <DialogHeader>
           <DialogTitle className={`text-base ${isDarkMode ? 'text-white' : ''}`}>{title}</DialogTitle>
         </DialogHeader>
-        <div className="py-4">
+        <div className="py-4 flex-1 min-h-0 overflow-y-auto">
           {children}
         </div>
       </DialogContent>

@@ -38,32 +38,34 @@ export default function PinInput({ onValidPin }: PinInputProps) {
   }
 
   return (
-    <div className="min-h-screen pt-6 pb-6 pl-6 pr-6 bg-gradient-animation flex flex-col items-center justify-center">
-      <div>
-        <h1 className="heading-h1 text-center mb-4"> Scanner</h1>
-        <p className="body-base text-center mb-4">
-          Coloca el PIN proporcionado para acceder.
-        </p>
+    <div className="min-h-[100dvh] pt-6 pb-6 pl-6 pr-6 bg-gradient-animation flex flex-col items-center justify-center overflow-y-auto">
+      <div className="flex-1 flex flex-col items-center justify-center w-full max-w-xs">
+        <div>
+          <h1 className="heading-h1 text-center mb-4"> Scanner</h1>
+          <p className="body-base text-center mb-4">
+            Coloca el PIN proporcionado para acceder.
+          </p>
+        </div>
+        <form onSubmit={handleSubmit} className="w-full space-y-4">
+          <Input
+            type="tel"
+            maxLength={4}
+            placeholder="Ingrese el PIN"
+            value={pin}
+            onChange={(e) => {
+              setPin(e.target.value.replace(/\D/g, '').slice(0, 4))
+              setError('')
+            }}
+            className="text-center text-2xl"
+            inputMode="numeric"
+          />
+          <Button type="submit" className="w-full" disabled={pin.length !== 4}>
+            Verificar
+          </Button>
+          {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+        </form>
       </div>
-      <form onSubmit={handleSubmit} className="w-full max-w-xs space-y-4">
-        <Input
-          type="tel"
-          maxLength={4}
-          placeholder="Ingrese el PIN"
-          value={pin}
-          onChange={(e) => {
-            setPin(e.target.value.replace(/\D/g, '').slice(0, 4))
-            setError('')
-          }}
-          className="text-center text-2xl"
-          inputMode="numeric"
-        />
-        <Button type="submit" className="w-full" disabled={pin.length !== 4}>
-          Verificar
-        </Button>
-        {error && <p className="text-red-500 text-sm text-center">{error}</p>}
-      </form>
-      <div className="mt-8 flex justify-center absolute bottom-0 left-0 right-0 mb-8">
+      <div className="mt-8 flex justify-center pb-8">
           <a 
             href="https://eventechy.com" 
             target="_blank" 
