@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import Image from 'next/image'
 import { theme } from '@/config/theme'
+import { Maximize, Minimize } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 interface Photo {
   id: string
@@ -45,6 +47,7 @@ export default function ProyeccionPage() {
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set())
   const [batchKey, setBatchKey] = useState(0) // Key para forzar reinicio de animación
+  const [isFullscreen, setIsFullscreen] = useState(false)
 
   // Función para obtener fotos aprobadas
   const fetchPhotos = useCallback(async () => {
@@ -209,6 +212,67 @@ export default function ProyeccionPage() {
     return () => clearInterval(interval)
   }, [fetchPhotos])
 
+  // Función para entrar en pantalla completa
+  const enterFullscreen = useCallback(() => {
+    const element = document.documentElement
+    if (element.requestFullscreen) {
+      element.requestFullscreen()
+    } else if ((element as any).webkitRequestFullscreen) {
+      (element as any).webkitRequestFullscreen()
+    } else if ((element as any).mozRequestFullScreen) {
+      (element as any).mozRequestFullScreen()
+    } else if ((element as any).msRequestFullscreen) {
+      (element as any).msRequestFullscreen()
+    }
+  }, [])
+
+  // Función para salir de pantalla completa
+  const exitFullscreen = useCallback(() => {
+    if (document.exitFullscreen) {
+      document.exitFullscreen()
+    } else if ((document as any).webkitExitFullscreen) {
+      (document as any).webkitExitFullscreen()
+    } else if ((document as any).mozCancelFullScreen) {
+      (document as any).mozCancelFullScreen()
+    } else if ((document as any).msExitFullscreen) {
+      (document as any).msExitFullscreen()
+    }
+  }, [])
+
+  // Manejar cambios en el estado de pantalla completa
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      const isCurrentlyFullscreen = !!(
+        document.fullscreenElement ||
+        (document as any).webkitFullscreenElement ||
+        (document as any).mozFullScreenElement ||
+        (document as any).msFullscreenElement
+      )
+      setIsFullscreen(isCurrentlyFullscreen)
+    }
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange)
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange)
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange)
+    document.addEventListener('MSFullscreenChange', handleFullscreenChange)
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange)
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange)
+      document.removeEventListener('mozfullscreenchange', handleFullscreenChange)
+      document.removeEventListener('MSFullscreenChange', handleFullscreenChange)
+    }
+  }, [])
+
+  // Función para toggle de pantalla completa
+  const toggleFullscreen = useCallback(() => {
+    if (isFullscreen) {
+      exitFullscreen()
+    } else {
+      enterFullscreen()
+    }
+  }, [isFullscreen, enterFullscreen, exitFullscreen])
+
   if (isLoading) {
     return (
       <>
@@ -227,7 +291,20 @@ export default function ProyeccionPage() {
   return (
     <>
       <div className="bg-gradient-animation" />
-      <div className="content-container min-h-screen flex flex-col p-8">
+      <div className="content-container min-h-screen flex flex-col p-8 relative">
+        {/* Botón de pantalla completa - Esquina superior derecha */}
+        <Button
+          onClick={toggleFullscreen}
+          className="fixed top-4 right-4 z-50 bg-white/10 hover:bg-white/20 backdrop-blur-lg border border-white/20 text-white rounded-full p-3 shadow-lg"
+          aria-label={isFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}
+        >
+          {isFullscreen ? (
+            <Minimize className="h-5 w-5" />
+          ) : (
+            <Maximize className="h-5 w-5" />
+          )}
+        </Button>
+
         {/* Título del evento - FIJO ARRIBA */}
         <div className="title-image-container mb-8 flex-shrink-0">
           <Image
