@@ -45,8 +45,10 @@ export default function MensajesPage() {
   }, [carouselMessages.length]);
 
   return (
-    <div className="min-h-screen bg-gradient-animation flex flex-col items-center justify-center p-8">
-      <div className="w-full max-w-4xl mx-auto">
+    <>
+      <div className="bg-gradient-animation" />
+      <div className="min-h-screen flex flex-col items-center justify-center p-8 relative z-10">
+        <div className="w-full max-w-4xl mx-auto relative z-10">
        
         {/* Título */}
         <h1 className="heading-h1 text-center mb-2 text-cyan-200">
@@ -101,7 +103,8 @@ export default function MensajesPage() {
           />
         </div>
 
+        </div>
       </div>
-    </div>
+    </>
   );
 } 

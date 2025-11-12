@@ -17,7 +17,7 @@ const Textarea = React.forwardRef<
         "shadow-sm",
         "transition-colors",
         "placeholder:text-gray-400",
-        "focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent",
+        "focus:outline-none focus:ring-2 focus:ring-inset focus:ring-purple-500 focus:border-purple-500",
         "disabled:cursor-not-allowed disabled:opacity-50",
         "md:text-sm",
         "rounded-xl",

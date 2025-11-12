@@ -58,7 +58,7 @@ export function RsvpModal({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className={`grid gap-4 ${isDarkMode ? 'text-white bg-gray-900 border-gray-700' : 'bg-white'}`}>
+    <form onSubmit={handleSubmit} className={`grid gap-4 overflow-x-hidden ${isDarkMode ? 'text-white bg-gray-900 border-gray-700' : 'bg-white'}`}>
       <div className="space-y-2">
         <label className={`text-sm font-medium ${isDarkMode ? 'text-white' : ''}`}>
           Apellido del invitado <span className="text-red-500">*</span>
@@ -160,6 +160,7 @@ export function RsvpModal({ onClose }: { onClose: () => void }) {
     </form>
   )
 }
+
 
 
 

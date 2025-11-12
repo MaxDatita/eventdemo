@@ -44,9 +44,10 @@ const DialogContent = React.forwardRef<
       <DialogPrimitive.Content
         ref={ref}
         className={cn(
-          "fixed left-[50%] top-[50%] z-50 flex flex-col w-[calc(100%-2rem)] max-w-lg max-h-[calc(100dvh-2rem)] translate-x-[-50%] translate-y-[-50%]",
+          "fixed left-[50%] top-[50%] z-50 flex flex-col w-[calc(100%-2rem)] max-w-lg max-h-[95dvh] translate-x-[-50%] translate-y-[-50%]",
+          "md:max-h-[calc(100dvh-2rem)]",
           isDarkMode ? "bg-gray-900 border-gray-700 text-white" : "bg-white border-gray-200",
-          "p-6 shadow-lg rounded-2xl overflow-y-auto",
+          "shadow-lg rounded-2xl overflow-hidden",
           "duration-200",
           "data-[state=open]:animate-in data-[state=closed]:animate-out",
           "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
@@ -57,13 +58,17 @@ const DialogContent = React.forwardRef<
         )}
         {...props}
       >
-        <div className="flex flex-col flex-1 min-h-0">
-          {children}
+        <div className="flex flex-col flex-1 min-h-0 overflow-hidden relative">
+          <DialogPrimitive.Close className={`absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground z-20 ${isDarkMode ? 'text-white' : ''}`}>
+            <X className="h-4 w-4" />
+            <span className="sr-only">Close</span>
+          </DialogPrimitive.Close>
+          <div className="flex flex-col flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-6 pb-6 w-full">
+            <div className="w-full min-w-0">
+              {children}
+            </div>
+          </div>
         </div>
-        <DialogPrimitive.Close className={`absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground z-10 ${isDarkMode ? 'text-white' : ''}`}>
-          <X className="h-4 w-4" />
-          <span className="sr-only">Close</span>
-        </DialogPrimitive.Close>
       </DialogPrimitive.Content>
     </DialogPortal>
   );
@@ -79,8 +84,8 @@ const DialogHeader = ({
   return (
     <div
       className={cn(
-        "flex flex-col space-y-1.5 text-center sm:text-left",
-        isDarkMode ? "pb-4 border-b border-gray-700" : "pb-4 border-b border-gray-100",
+        "flex flex-col space-y-1.5 text-center sm:text-left sticky top-0 z-10 pt-6 -mx-6 px-6 mb-4",
+        isDarkMode ? "pb-4 border-b border-gray-700 bg-gray-900" : "pb-4 border-b border-gray-100 bg-white",
         className
       )}
       {...props}

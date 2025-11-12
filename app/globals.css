@@ -15,31 +15,16 @@
     height: 100%;
     height: -webkit-fill-available;
     overflow-x: hidden;
-    /* Fondo base que siempre será visible */
+    /* Fondo base que siempre será visible - extendido para cubrir notch y navegación */
     background: linear-gradient(140deg, 
       #000000 0%,
       #471069 55%,
       #196E76 100%
     );
+    background-attachment: fixed;
     background-size: cover;
     background-repeat: no-repeat;
     background-position: center;
-    /* En iOS Safari, usar scroll en lugar de fixed */
-    background-attachment: scroll;
-  }
-
-  /* Para navegadores que soportan fixed, usarlo */
-  @supports (background-attachment: fixed) {
-    html {
-      background-attachment: fixed;
-    }
-  }
-
-  /* Detectar iOS Safari y usar scroll */
-  @supports (-webkit-touch-callout: none) {
-    html {
-      background-attachment: scroll;
-    }
   }
 
   body {
@@ -52,63 +37,16 @@
     overflow-x: hidden;
     width: 100%;
     position: relative;
-    /* Fondo de respaldo que cubre todo - siempre visible */
+    /* Fondo de respaldo que cubre todo */
     background: linear-gradient(140deg, 
       #000000 0%,
       #471069 55%,
       #196E76 100%
     );
+    background-attachment: fixed;
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
-    background-attachment: scroll;
-  }
-
-  /* Para navegadores que soportan fixed, usarlo */
-  @supports (background-attachment: fixed) {
-    body {
-      background-attachment: fixed;
-    }
-  }
-
-  /* Detectar iOS Safari y usar scroll - y asegurar altura suficiente */
-  @supports (-webkit-touch-callout: none) {
-    body {
-      background-attachment: scroll;
-      /* En iOS, el body debe tener altura suficiente para cubrir todo el contenido */
-      position: relative;
-      /* Usar pseudo-elemento para fondo que siempre cubra todo */
-      overflow-x: hidden;
-    }
-    
-    /* Pseudo-elemento para fondo en iOS que cubra todo el contenido */
-    body::before {
-      content: '';
-      position: fixed;
-      top: -500px;
-      left: 0;
-      right: 0;
-      bottom: -500px;
-      width: 100%;
-      height: calc(100% + 1000px);
-      min-height: calc(100vh + 1000px);
-      min-height: calc(100dvh + 1000px);
-      background: linear-gradient(140deg, 
-        #000000 0%,
-        #471069 55%,
-        #196E76 100%
-      );
-      background-size: cover;
-      background-position: center;
-      z-index: -2;
-      pointer-events: none;
-    }
-    
-    html {
-      /* En iOS, el html debe tener altura suficiente para el contenido */
-      min-height: 100%;
-      height: auto;
-    }
   }
 
   /* Font families */
@@ -135,53 +73,22 @@
     );
     position: fixed;
     /* Extender más arriba y abajo para cubrir notch y navegación del navegador */
-    top: -300px;
+    top: -200px;
     left: 0;
     right: 0;
-    bottom: -300px;
+    bottom: -200px;
     width: 100%;
-    height: calc(100% + 600px);
-    min-height: calc(100vh + 600px);
-    min-height: calc(100dvh + 600px);
+    height: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
     z-index: -1;
+    /* Asegurar que cubra toda la pantalla incluso con scroll */
+    background-attachment: fixed;
     background-size: cover;
     background-position: center;
-    /* En iOS Safari, el fondo debe ser absolute en lugar de fixed para que funcione */
-    background-attachment: scroll;
-  }
-
-  /* Para navegadores que soportan fixed correctamente */
-  @supports (background-attachment: fixed) {
-    .bg-gradient-animation {
-      background-attachment: fixed;
-    }
-  }
-
-  /* Detectar iOS Safari - usar position absolute y extender más */
-  @supports (-webkit-touch-callout: none) {
-    /* En iOS Safari, el fondo debe estar en un contenedor con altura suficiente */
-    body {
-      position: relative;
-      min-height: 100%;
-      min-height: -webkit-fill-available;
-      min-height: 100dvh;
-    }
-    
-    .bg-gradient-animation {
-      position: absolute;
-      top: -500px;
-      left: 0;
-      right: 0;
-      bottom: -500px;
-      width: 100%;
-      height: calc(100% + 1000px);
-      min-height: calc(100vh + 1000px);
-      min-height: calc(100dvh + 1000px);
-      background-attachment: scroll;
-      /* Asegurar que cubra todo el contenido */
-      background-size: cover;
-      background-position: center;
-    }
+    /* Extender el fondo para cubrir áreas seguras */
+    margin-top: calc(-1 * env(safe-area-inset-top, 0px));
+    margin-bottom: calc(-1 * env(safe-area-inset-bottom, 0px));
   }
 
   .animate-bounce {
@@ -383,6 +290,8 @@
     z-index: 1;
     -webkit-overflow-scrolling: touch;
     box-sizing: border-box;
+    /* Evitar espacio extra en mobile */
+    max-height: 100dvh;
     /* Asegurar que el fondo siempre sea visible */
     background: transparent;
   }
@@ -440,5 +349,3 @@
     }
   }
 }
-
-

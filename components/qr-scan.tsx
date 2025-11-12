@@ -150,8 +150,14 @@ const QRScanner = () => {
   };
 
   return (
-    <div className="min-h-screen pt-6 pb-6 pl-6 pr-6 bg-gradient-animation flex items-center justify-center">
-      <div className="w-full max-w-md mx-auto">
+    <div className="min-h-screen pt-6 pb-6 pl-6 pr-6 bg-gradient-animation flex items-center justify-center relative z-10">
+      {/* Badge Modo Demo */}
+      <div className="absolute top-8 left-1/2 transform -translate-x-1/2 z-20">
+        <div className="bg-purple-600 text-white px-3 py-1 rounded-full backdrop-blur-sm shadow-lg">
+          <span className="text-xs font-bold">MODO DEMO</span>
+        </div>
+      </div>
+      <div className="w-full max-w-md mx-auto pt-12">
         <h1 className="heading-h1 mb-8 text-center">
           Validación de Invitaciones
         </h1>

@@ -49,7 +49,7 @@ export default function ProyeccionPage() {
   // Función para obtener fotos aprobadas
   const fetchPhotos = useCallback(async () => {
     try {
-      const response = await fetch('/api/photos')
+      const response = await fetch('/api/photos?useApproved=true')
       const result = await response.json()
       
       if (result.photos && Array.isArray(result.photos)) {
@@ -240,6 +240,12 @@ export default function ProyeccionPage() {
           />
         </div>
 
+        <div className="flex-shrink-0 flex flex-col items-center gap-3 pb-8">
+          <div className="demo-badge-center-bottom relative">
+            <span className="text-xs font-bold">MODO DEMO</span>
+          </div>
+        </div>
+
         {/* Contenedor principal - CONTENIDO SCROLLEABLE */}
         <div className="w-full max-w-6xl mx-auto flex-1 flex items-center justify-center">
           {showMessage ? (
@@ -303,6 +309,24 @@ export default function ProyeccionPage() {
               ))}
             </div>
           ) : null}
+        </div>
+
+        {/* MODO DEMO y Logo al final - uno debajo del otro */}
+        <div className="mt-8 flex-shrink-0 flex flex-col items-center gap-3 pb-8">
+          <a 
+            href="https://eventechy.com" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="hover:opacity-80 transition-opacity"
+          >
+            <Image
+              src="/logo-fondo-oscuro.png"
+              alt="Eventechy"
+              width={155}
+              height={55}
+              className="rounded-lg"
+            />
+          </a>
         </div>
       </div>
 

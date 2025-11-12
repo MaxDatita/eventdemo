@@ -1,14 +1,9 @@
-import { getScannerPin } from '@/lib/google-sheets-registros'
 import { NextResponse } from 'next/server'
 
 export async function POST(request: Request) {
   try {
     const { pin } = await request.json()
-    const correctPin = await getScannerPin()
-
-    if (!correctPin) {
-      return NextResponse.json({ error: 'Error al obtener el PIN' }, { status: 500 })
-    }
+    const correctPin = '1234'
 
     if (pin === correctPin) {
       return NextResponse.json({ success: true })

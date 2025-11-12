@@ -151,25 +151,27 @@ export default function MensajesEventPage() {
   }, [allMessages, addMessage]);
 
   return (
-    <div className="fixed inset-0 bg-gradient-animation overflow-hidden">
-      {/* Título */}
-      <div className="fixed top-8 left-1/2 transform -translate-x-1/2 z-10">
-        <h1 className="heading-h1 text-center text-cyan-200">
-          Mensajes de los invitados
-        </h1>
-        <div className="mt-2 flex justify-center">
-          <div className="bg-purple-600 text-white px-3 py-1 rounded-full backdrop-blur-sm shadow-lg">
-            <span className="text-xs font-bold">MODO DEMO</span>
+    <>
+      <div className="bg-gradient-animation" />
+      <div className="fixed inset-0 overflow-hidden z-10">
+        {/* Título */}
+        <div className="fixed top-8 left-1/2 transform -translate-x-1/2 z-20">
+          <h1 className="heading-h1 text-center text-cyan-200">
+            Mensajes de los invitados
+          </h1>
+          <div className="mt-2 flex justify-center">
+            <div className="bg-purple-600 text-white px-3 py-1 rounded-full backdrop-blur-sm shadow-lg">
+              <span className="text-xs font-bold">MODO DEMO</span>
+            </div>
           </div>
         </div>
-      </div>
 
       {/* Contenedor de mensajes */}
-      <div className="relative w-full h-full pt-24">
+      <div className="relative w-full h-full pt-24 z-20">
         {displayMessages.map((message) => (
           <div
             key={message.key}
-            className="absolute transform -translate-x-1/2 -translate-y-1/2 transition-opacity duration-[2500ms] ease-in-out"
+            className="absolute transform -translate-x-1/2 -translate-y-1/2 transition-opacity duration-[2500ms] ease-in-out z-20"
             style={{
               left: `${message.x}%`,
               top: `${message.y}%`,
@@ -182,7 +184,7 @@ export default function MensajesEventPage() {
       </div>
 
       {/* Logo fijo abajo */}
-      <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-10">
+      <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-20">
         <Image
           src="/logo-fondo-oscuro.png"
           alt="Eventechy"
@@ -191,7 +193,8 @@ export default function MensajesEventPage() {
           className="rounded-lg eventechy-logo"
         />
       </div>
-    </div>
+      </div>
+    </>
   );
 }
 
