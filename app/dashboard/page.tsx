@@ -10,6 +10,7 @@ import { LoteModal } from '@/components/ui/lote-modal'
 import { GenerateTicketModal } from '@/components/ui/generate-ticket-modal'
 import { ExportSummaryModal } from '@/components/ui/export-summary-modal'
 import { EditGuestModal } from '@/components/ui/edit-guest-modal'
+import { AddGuestModal } from '@/components/ui/add-guest-modal'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { useDemoDates } from '@/contexts/DemoContext'
 import { theme } from '@/config/theme'
@@ -89,6 +90,7 @@ function DashboardContent() {
   const [deletedGuests, setDeletedGuests] = useState<Guest[]>([])
   const [themeConfig, setThemeConfig] = useState<typeof theme | null>(null)
   const [showFilterModal, setShowFilterModal] = useState(false)
+  const [showAddGuestModal, setShowAddGuestModal] = useState(false)
 
   const handleLogin = () => {
     if (password === 'admin123') {
@@ -345,6 +347,37 @@ function DashboardContent() {
     }
   }
 
+  const handleAddGuest = (newGuestData: Omit<Guest, 'id' | 'confirmedAt' | 'deleted' | 'deletedAt'>) => {
+    try {
+      // Generar ID único
+      const allGuests = loadGuestsFromStorage()
+      let newId: string
+      do {
+        newId = `guest-${Math.random().toString(36).substr(2, 9)}`
+      } while (allGuests.some(g => g.id === newId))
+
+      // Crear nuevo invitado
+      const newGuest: Guest = {
+        id: newId,
+        ...newGuestData,
+        confirmedAt: new Date().toISOString(),
+        deleted: false,
+        deletedAt: null
+      }
+
+      // Agregar al principio de la lista
+      const updatedGuests = [newGuest, ...allGuests]
+      saveGuestsToStorage(updatedGuests)
+      
+      toast.success('Invitado agregado correctamente')
+      setShowAddGuestModal(false)
+      fetchDashboardData(true)
+    } catch (error) {
+      console.error('Error adding guest:', error)
+      toast.error('Error al agregar invitado')
+    }
+  }
+
   // Filtrar invitados
   const filteredGuests = guests.filter((guest) => {
     // Filtro por búsqueda
@@ -533,8 +566,15 @@ function DashboardContent() {
         {/* Modo RSVP */}
         {isRsvpMode && (
           <div className="space-y-6">
-            {/* Botón de Exportar Resumen */}
-            <div className="flex justify-end">
+            {/* Botones de Acción */}
+            <div className="flex justify-between items-center">
+              <Button
+                onClick={() => setShowAddGuestModal(true)}
+                className="flex items-center gap-2"
+              >
+                <UserPlus className="h-4 w-4" />
+                Agregar Invitado
+              </Button>
               <Button
                 onClick={() => setShowExportModal(true)}
                 className="flex items-center gap-2"
@@ -970,6 +1010,12 @@ function DashboardContent() {
           }}
           guest={selectedGuest}
           onSave={handleGuestSaved}
+        />
+
+        <AddGuestModal
+          open={showAddGuestModal}
+          onClose={() => setShowAddGuestModal(false)}
+          onSave={handleAddGuest}
         />
 
         {/* Modal de Filtros */}
