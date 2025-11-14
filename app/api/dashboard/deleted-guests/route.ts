@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server';
-import { generateDashboardData, calculateStats, generateMockTickets } from '@/lib/mock-data';
+import { generateDashboardData } from '@/lib/mock-data';
 
-// Compartir el mismo estado de invitados entre todas las rutas
+// Compartir el mismo estado de invitados
 let mockGuests = generateDashboardData().guests;
 
-// Función para reinicializar si es necesario
 function getGuests() {
   if (mockGuests.length === 0) {
     mockGuests = generateDashboardData().guests;
@@ -25,25 +24,19 @@ export async function GET(request: Request) {
       );
     }
 
-    // Obtener invitados activos (no eliminados)
-    const activeGuests = getGuests().filter(g => !g.deleted);
-    const tickets = generateMockTickets(45);
-    const stats = calculateStats(activeGuests, tickets);
+    // Obtener invitados eliminados
+    const deletedGuests = getGuests().filter(g => g.deleted === true);
 
     return NextResponse.json({
       success: true,
-      guests: activeGuests,
-      tickets,
-      stats
+      guests: deletedGuests
     });
   } catch (error) {
-    console.error('Error fetching dashboard stats:', error);
+    console.error('Error fetching deleted guests:', error);
     return NextResponse.json(
-      { error: 'Error al obtener estadísticas' },
+      { error: 'Error al obtener invitados eliminados' },
       { status: 500 }
     );
   }
 }
-
-
 

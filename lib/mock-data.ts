@@ -7,6 +7,9 @@ export interface Guest {
   companions: number;
   dietaryRequirements: string;
   confirmedAt: string;
+  tableNumber?: number | null;
+  deleted?: boolean;
+  deletedAt?: string | null;
 }
 
 export interface Ticket {
@@ -88,7 +91,10 @@ export function generateMockGuests(count: number = 25): Guest[] {
       lastName,
       companions,
       dietaryRequirements: dietaryReq,
-      confirmedAt: confirmedAt.toISOString()
+      confirmedAt: confirmedAt.toISOString(),
+      tableNumber: null,
+      deleted: false,
+      deletedAt: null
     });
   }
 

@@ -9,8 +9,11 @@ import { StatsCard } from '@/components/ui/stats-card'
 import { LoteModal } from '@/components/ui/lote-modal'
 import { GenerateTicketModal } from '@/components/ui/generate-ticket-modal'
 import { ExportSummaryModal } from '@/components/ui/export-summary-modal'
+import { EditGuestModal } from '@/components/ui/edit-guest-modal'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { useDemoDates } from '@/contexts/DemoContext'
 import { theme } from '@/config/theme'
+import { generateDashboardData, calculateStats, generateMockTickets } from '@/lib/mock-data'
 import {
   Users,
   Ticket,
@@ -22,6 +25,10 @@ import {
   Filter,
   Lock,
   RefreshCw,
+  Edit,
+  Trash2,
+  Table,
+  RotateCcw,
 } from 'lucide-react'
 import Image from 'next/image'
 import { toast } from 'sonner'
@@ -33,6 +40,9 @@ interface Guest {
   companions: number
   dietaryRequirements: string
   confirmedAt: string
+  tableNumber?: number | null
+  deleted?: boolean
+  deletedAt?: string | null
 }
 
 interface Ticket {
@@ -55,7 +65,7 @@ interface DashboardStats {
   dietaryRequirementsBreakdown: Record<string, number>
 }
 
-type FilterType = 'all' | 'with-dietary' | 'without-dietary'
+type FilterType = 'all' | 'with-dietary' | 'with-table' | 'without-table'
 
 function DashboardContent() {
   const searchParams = useSearchParams()
@@ -73,7 +83,12 @@ function DashboardContent() {
   const [showLoteModal, setShowLoteModal] = useState(false)
   const [showGenerateTicketModal, setShowGenerateTicketModal] = useState(false)
   const [showExportModal, setShowExportModal] = useState(false)
+  const [showEditGuestModal, setShowEditGuestModal] = useState(false)
+  const [selectedGuest, setSelectedGuest] = useState<Guest | null>(null)
+  const [showTrash, setShowTrash] = useState(false)
+  const [deletedGuests, setDeletedGuests] = useState<Guest[]>([])
   const [themeConfig, setThemeConfig] = useState<typeof theme | null>(null)
+  const [showFilterModal, setShowFilterModal] = useState(false)
 
   const handleLogin = () => {
     if (password === 'admin123') {
@@ -85,27 +100,77 @@ function DashboardContent() {
     }
   }
 
+  // Funciones helper para localStorage
+  const loadGuestsFromStorage = useCallback((): Guest[] => {
+    if (typeof window === 'undefined') return []
+    try {
+      const stored = localStorage.getItem('demo-guests')
+      if (stored) {
+        return JSON.parse(stored)
+      }
+    } catch (error) {
+      console.error('Error loading guests from storage:', error)
+    }
+    return []
+  }, [])
+
+  const saveGuestsToStorage = useCallback((guestsToSave: Guest[]) => {
+    if (typeof window === 'undefined') return
+    try {
+      localStorage.setItem('demo-guests', JSON.stringify(guestsToSave))
+    } catch (error) {
+      console.error('Error saving guests to storage:', error)
+    }
+  }, [])
+
+  const initializeGuests = useCallback((): Guest[] => {
+    const stored = loadGuestsFromStorage()
+    if (stored.length > 0) {
+      // Ordenar: los más recientes primero (por confirmedAt)
+      return stored.sort((a, b) => {
+        const dateA = new Date(a.confirmedAt).getTime()
+        const dateB = new Date(b.confirmedAt).getTime()
+        return dateB - dateA // Más reciente primero
+      })
+    }
+    // Si no hay datos guardados, generar nuevos
+    const initialData = generateDashboardData()
+    const initialGuests = initialData.guests.map(g => ({
+      ...g,
+      tableNumber: g.tableNumber || null,
+      deleted: g.deleted || false,
+      deletedAt: g.deletedAt || null
+    }))
+    // Ordenar por fecha de confirmación (más recientes primero)
+    initialGuests.sort((a, b) => {
+      const dateA = new Date(a.confirmedAt).getTime()
+      const dateB = new Date(b.confirmedAt).getTime()
+      return dateB - dateA
+    })
+    saveGuestsToStorage(initialGuests)
+    return initialGuests
+  }, [loadGuestsFromStorage, saveGuestsToStorage])
+
   const fetchDashboardData = useCallback(async (silent = false) => {
     if (!isAuthenticated) return
 
     if (!silent) setIsLoading(true)
     try {
-      const response = await fetch(
-        `/api/dashboard/stats?password=${encodeURIComponent(password || 'admin123')}`
-      )
-      const result = await response.json()
+      // Cargar desde localStorage
+      const allGuests = initializeGuests()
+      const activeGuests = allGuests.filter(g => !g.deleted)
+      const tickets = generateMockTickets(45)
+      const stats = calculateStats(activeGuests, tickets)
 
-      if (response.ok && result.success) {
-        setGuests(result.guests || [])
-        setTickets(result.tickets || []) // Guardado para futuras funcionalidades
-        setStats(result.stats || null)
-      }
+      setGuests(activeGuests)
+      setTickets(tickets)
+      setStats(stats)
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
     } finally {
       if (!silent) setIsLoading(false)
     }
-  }, [isAuthenticated, password])
+  }, [isAuthenticated, initializeGuests])
 
   const fetchThemeConfig = useCallback(async () => {
     if (!isAuthenticated) return
@@ -124,6 +189,19 @@ function DashboardContent() {
     }
   }, [isAuthenticated, password])
 
+  const fetchDeletedGuests = useCallback(async () => {
+    if (!isAuthenticated) return
+
+    try {
+      // Cargar desde localStorage
+      const allGuests = loadGuestsFromStorage()
+      const deleted = allGuests.filter(g => g.deleted === true)
+      setDeletedGuests(deleted)
+    } catch (error) {
+      console.error('Error fetching deleted guests:', error)
+    }
+  }, [isAuthenticated, loadGuestsFromStorage])
+
   // Auto-autenticar si viene la contraseña en query params (modo demo)
   useEffect(() => {
     const demoParam = searchParams.get('demo')
@@ -136,9 +214,10 @@ function DashboardContent() {
       setTimeout(() => {
         fetchDashboardData()
         fetchThemeConfig()
+        fetchDeletedGuests()
       }, 100)
     }
-  }, [searchParams, isAuthenticated, fetchDashboardData, fetchThemeConfig])
+  }, [searchParams, isAuthenticated, fetchDashboardData, fetchThemeConfig, fetchDeletedGuests])
 
   // Auto-refresh cada 60 segundos
   useEffect(() => {
@@ -146,16 +225,19 @@ function DashboardContent() {
 
     fetchDashboardData(false)
     fetchThemeConfig()
+    fetchDeletedGuests()
 
     const interval = setInterval(() => {
       setIsRefreshing(true)
       fetchDashboardData(true)
       fetchThemeConfig()
+      fetchDeletedGuests()
       setTimeout(() => setIsRefreshing(false), 2000)
     }, 60000)
 
     return () => clearInterval(interval)
-  }, [isAuthenticated, fetchDashboardData, fetchThemeConfig])
+  }, [isAuthenticated, fetchDashboardData, fetchThemeConfig, fetchDeletedGuests])
+
 
   const handleLoteSave = () => {
     fetchThemeConfig()
@@ -164,6 +246,103 @@ function DashboardContent() {
 
   const handleGenerateTicketSuccess = () => {
     fetchDashboardData(true)
+  }
+
+  const handleEditGuest = (guest: Guest) => {
+    setSelectedGuest(guest)
+    setShowEditGuestModal(true)
+  }
+
+  const handleDeleteGuest = async (guestId: string) => {
+    if (!confirm('¿Estás seguro de que deseas eliminar este invitado?')) {
+      return
+    }
+
+    try {
+      // Cargar todos los invitados
+      const allGuests = loadGuestsFromStorage()
+      const guestIndex = allGuests.findIndex(g => g.id === guestId)
+      
+      if (guestIndex === -1) {
+        toast.error('Invitado no encontrado')
+        return
+      }
+
+      // Marcar como eliminado
+      allGuests[guestIndex] = {
+        ...allGuests[guestIndex],
+        deleted: true,
+        deletedAt: new Date().toISOString()
+      }
+
+      // Guardar en localStorage
+      saveGuestsToStorage(allGuests)
+      
+      toast.success('Invitado eliminado correctamente')
+      fetchDashboardData(true)
+      fetchDeletedGuests()
+    } catch (error) {
+      console.error('Error deleting guest:', error)
+      toast.error('Error al eliminar invitado')
+    }
+  }
+
+  const handleRestoreGuest = async (guestId: string) => {
+    try {
+      // Cargar todos los invitados
+      const allGuests = loadGuestsFromStorage()
+      const guestIndex = allGuests.findIndex(g => g.id === guestId)
+      
+      if (guestIndex === -1) {
+        toast.error('Invitado no encontrado')
+        return
+      }
+
+      // Restaurar
+      allGuests[guestIndex] = {
+        ...allGuests[guestIndex],
+        deleted: false,
+        deletedAt: null
+      }
+
+      // Guardar en localStorage
+      saveGuestsToStorage(allGuests)
+      
+      toast.success('Invitado restaurado correctamente')
+      fetchDashboardData(true)
+      fetchDeletedGuests()
+    } catch (error) {
+      console.error('Error restoring guest:', error)
+      toast.error('Error al restaurar invitado')
+    }
+  }
+
+  const handleGuestSaved = (updatedGuest: Guest) => {
+    try {
+      // Cargar todos los invitados
+      const allGuests = loadGuestsFromStorage()
+      const guestIndex = allGuests.findIndex(g => g.id === updatedGuest.id)
+      
+      if (guestIndex === -1) {
+        // Si es un nuevo invitado, agregarlo al principio
+        const newGuests = [updatedGuest, ...allGuests]
+        saveGuestsToStorage(newGuests)
+        toast.success('Invitado agregado correctamente')
+      } else {
+        // Actualizar el invitado existente
+        allGuests[guestIndex] = updatedGuest
+        // Mover al principio si fue actualizado recientemente
+        const updatedGuestItem = allGuests.splice(guestIndex, 1)[0]
+        allGuests.unshift(updatedGuestItem)
+        saveGuestsToStorage(allGuests)
+        toast.success('Invitado actualizado correctamente')
+      }
+      
+      fetchDashboardData(true)
+    } catch (error) {
+      console.error('Error saving guest:', error)
+      toast.error('Error al guardar cambios')
+    }
   }
 
   // Filtrar invitados
@@ -181,11 +360,27 @@ function DashboardContent() {
     if (filter === 'with-dietary') {
       return guest.dietaryRequirements && guest.dietaryRequirements.trim() !== ''
     }
-    if (filter === 'without-dietary') {
-      return !guest.dietaryRequirements || guest.dietaryRequirements.trim() === ''
+    
+    // Filtro por mesa
+    if (filter === 'with-table') {
+      return guest.tableNumber !== null && guest.tableNumber !== undefined
+    }
+    if (filter === 'without-table') {
+      return guest.tableNumber === null || guest.tableNumber === undefined
     }
 
     return true
+  }).sort((a, b) => {
+    // Si el filtro es 'with-table', ordenar por número de mesa
+    if (filter === 'with-table') {
+      const tableA = a.tableNumber || 0
+      const tableB = b.tableNumber || 0
+      return tableA - tableB // Mesa más chica primero
+    }
+    // Para otros filtros, mantener el orden por fecha (más recientes primero)
+    const dateA = new Date(a.confirmedAt).getTime()
+    const dateB = new Date(b.confirmedAt).getTime()
+    return dateB - dateA
   })
 
   const isRsvpMode = theme.rsvpButton.mode === 'rsvp'
@@ -402,13 +597,26 @@ function DashboardContent() {
               }`}
             >
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-                <h2
-                  className={`text-xl font-bold ${
-                    isDarkMode ? 'text-white' : 'text-gray-900'
-                  }`}
-                >
-                  Lista de Invitados ({filteredGuests.length})
-                </h2>
+                <div className="flex items-center gap-4">
+                  <h2
+                    className={`text-xl font-bold ${
+                      isDarkMode ? 'text-white' : 'text-gray-900'
+                    }`}
+                  >
+                    Lista de Invitados ({filteredGuests.length})
+                  </h2>
+                  <Button
+                    variant="primary"
+                    onClick={() => {
+                      setShowTrash(true)
+                      fetchDeletedGuests()
+                    }}
+                    className="flex items-center gap-2"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Papelera ({deletedGuests.length})
+                  </Button>
+                </div>
                 <div className="flex flex-col sm:flex-row gap-3">
                   <div className="relative">
                     <Search
@@ -428,33 +636,21 @@ function DashboardContent() {
                       }`}
                     />
                   </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant={filter === 'all' ? 'primary' : 'secondary'}
-                      onClick={() => setFilter('all')}
-                      className={`flex items-center gap-2 transition-all focus:outline-none focus:ring-0 ${
-                        filter === 'all'
-                          ? 'ring-2 ring-purple-400 ring-offset-2'
-                          : ''
-                      }`}
-                    >
-                      <Filter className="h-4 w-4" />
-                      Todos
-                    </Button>
-                    <Button
-                      variant={
-                        filter === 'with-dietary' ? 'primary' : 'secondary'
-                      }
-                      onClick={() => setFilter('with-dietary')}
-                      className={`flex items-center gap-2 transition-all focus:outline-none focus:ring-0 ${
-                        filter === 'with-dietary'
-                          ? 'ring-2 ring-purple-400 ring-offset-2'
-                          : ''
-                      }`}
-                    >
-                      Con Requerimientos
-                    </Button>
-                  </div>
+                  <Button
+                    variant={filter !== 'all' ? 'secondary' : 'primary'}
+                    onClick={() => setShowFilterModal(true)}
+                    className="flex items-center gap-2"
+                  >
+                    <Filter className="h-4 w-4" />
+                    Filtros
+                    {filter !== 'all' && (
+                      <span className="ml-1 px-2 py-0.5 text-xs bg-purple-500 text-white rounded-full">
+                        {filter === 'with-dietary' && 'Con Requerimientos'}
+                        {filter === 'with-table' && 'Con Mesa'}
+                        {filter === 'without-table' && 'Sin Mesa'}
+                      </span>
+                    )}
+                  </Button>
                 </div>
               </div>
 
@@ -477,7 +673,7 @@ function DashboardContent() {
                   {filteredGuests.map((guest) => (
                     <div
                       key={guest.id}
-                      className={`p-4 rounded-lg border-2 ${
+                      className={`p-4 rounded-lg border-2 relative ${
                         guest.dietaryRequirements &&
                         guest.dietaryRequirements.trim() !== ''
                           ? isDarkMode
@@ -488,11 +684,11 @@ function DashboardContent() {
                           : 'bg-gray-50 border-gray-200'
                       }`}
                     >
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 w-full">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-2 flex-wrap">
                             <h3
-                              className={`font-semibold ${
+                              className={`font-semibold text-lg ${
                                 isDarkMode ? 'text-white' : 'text-gray-900'
                               }`}
                             >
@@ -504,6 +700,12 @@ function DashboardContent() {
                                   Requerimientos
                                 </span>
                               )}
+                            {guest.tableNumber && (
+                              <span className="px-2 py-1 text-xs font-semibold rounded-full bg-purple-500 text-white flex items-center gap-1">
+                                <Table className="h-3 w-3" />
+                                Mesa {guest.tableNumber}
+                              </span>
+                            )}
                           </div>
                           <div className="flex flex-wrap items-center gap-4 text-sm">
                             {guest.companions > 0 && (
@@ -539,12 +741,31 @@ function DashboardContent() {
                             </span>
                           </div>
                         </div>
+                        <div className="flex items-center gap-2 flex-shrink-0 w-full sm:w-auto sm:ml-4 justify-end sm:justify-start">
+                          <Button
+                            onClick={() => handleEditGuest(guest)}
+                            className="!bg-purple-600 hover:!bg-purple-700 !text-white !border-0 flex items-center justify-center gap-2 px-4 py-2 min-w-[100px] rounded-xl font-medium shadow-md"
+                            title="Editar invitado"
+                          >
+                            <Edit className="h-4 w-4" />
+                            <span>Editar</span>
+                          </Button>
+                          <Button
+                            onClick={() => handleDeleteGuest(guest.id)}
+                            className="!bg-red-600 hover:!bg-red-700 !text-white !border-0 flex items-center justify-center gap-2 px-4 py-2 min-w-[100px] rounded-xl font-medium shadow-md"
+                            title="Eliminar invitado"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            <span>Eliminar</span>
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   ))}
                 </div>
               )}
             </Card>
+
           </div>
         )}
 
@@ -740,6 +961,165 @@ function DashboardContent() {
           open={showExportModal}
           onClose={() => setShowExportModal(false)}
         />
+
+        <EditGuestModal
+          open={showEditGuestModal}
+          onClose={() => {
+            setShowEditGuestModal(false)
+            setSelectedGuest(null)
+          }}
+          guest={selectedGuest}
+          onSave={handleGuestSaved}
+        />
+
+        {/* Modal de Filtros */}
+        <Dialog open={showFilterModal} onOpenChange={setShowFilterModal}>
+          <DialogContent className={`sm:max-w-[500px] ${isDarkMode ? 'dark bg-gray-900 text-white border-gray-700' : 'bg-white'}`}>
+            <DialogHeader>
+              <DialogTitle className={isDarkMode ? 'text-white' : 'text-gray-900'}>
+                Filtrar Invitados
+              </DialogTitle>
+            </DialogHeader>
+            
+            <div className="space-y-3 mt-4">
+              <Button
+                variant={filter === 'all' ? 'primary' : 'secondary'}
+                onClick={() => {
+                  setFilter('all')
+                  setShowFilterModal(false)
+                }}
+                className="w-full flex items-center justify-start gap-2"
+              >
+                <Filter className="h-4 w-4" />
+                Todos
+              </Button>
+              
+              <Button
+                variant={filter === 'with-dietary' ? 'primary' : 'secondary'}
+                onClick={() => {
+                  setFilter('with-dietary')
+                  setShowFilterModal(false)
+                }}
+                className="w-full flex items-center justify-start gap-2"
+              >
+                <AlertCircle className="h-4 w-4" />
+                Con Requerimientos Alimentarios
+              </Button>
+              
+              <Button
+                variant={filter === 'with-table' ? 'primary' : 'secondary'}
+                onClick={() => {
+                  setFilter('with-table')
+                  setShowFilterModal(false)
+                }}
+                className="w-full flex items-center justify-start gap-2"
+              >
+                <Table className="h-4 w-4" />
+                Con Mesa (ordenados por número)
+              </Button>
+              
+              <Button
+                variant={filter === 'without-table' ? 'primary' : 'secondary'}
+                onClick={() => {
+                  setFilter('without-table')
+                  setShowFilterModal(false)
+                }}
+                className="w-full flex items-center justify-start gap-2"
+              >
+                <Table className="h-4 w-4" />
+                Sin Mesa
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal de Papelera */}
+        <Dialog open={showTrash} onOpenChange={setShowTrash}>
+          <DialogContent className={`sm:max-w-[700px] max-h-[80vh] overflow-y-auto ${isDarkMode ? 'dark bg-gray-900 text-white border-gray-700' : 'bg-white'}`}>
+            <DialogHeader>
+              <DialogTitle className={`flex items-center gap-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                <Trash2 className="h-5 w-5" />
+                Papelera ({deletedGuests.length})
+              </DialogTitle>
+            </DialogHeader>
+
+            {deletedGuests.length === 0 ? (
+              <div className="text-center py-12">
+                <Trash2 className="h-16 w-16 mx-auto mb-4 text-gray-400" />
+                <p className={isDarkMode ? 'text-gray-400' : 'text-gray-600'}>
+                  No hay invitados eliminados
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3 mt-4">
+                {deletedGuests.map((guest) => (
+                  <div
+                    key={guest.id}
+                    className={`p-4 rounded-lg border-2 ${
+                      isDarkMode
+                        ? 'bg-gray-700 border-gray-600 opacity-75'
+                        : 'bg-gray-50 border-gray-200 opacity-75'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3
+                            className={`font-semibold ${
+                              isDarkMode ? 'text-white' : 'text-gray-900'
+                            }`}
+                          >
+                            {guest.firstName} {guest.lastName}
+                          </h3>
+                          {guest.tableNumber && (
+                            <span className="px-2 py-1 text-xs font-semibold rounded-full bg-purple-500 text-white flex items-center gap-1">
+                              <Table className="h-3 w-3" />
+                              Mesa {guest.tableNumber}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap items-center gap-4 text-sm">
+                          {guest.companions > 0 && (
+                            <span
+                              className={
+                                isDarkMode ? 'text-gray-300' : 'text-gray-600'
+                              }
+                            >
+                              +{guest.companions} acompañante
+                              {guest.companions > 1 ? 's' : ''}
+                            </span>
+                          )}
+                          {guest.deletedAt && (
+                            <span
+                              className={
+                                isDarkMode ? 'text-gray-400' : 'text-gray-500'
+                              }
+                            >
+                              Eliminado: {new Date(guest.deletedAt).toLocaleDateString('es-ES')}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 ml-4">
+                        <Button
+                          variant="secondary"
+                          onClick={() => {
+                            handleRestoreGuest(guest.id)
+                            fetchDeletedGuests()
+                          }}
+                          className="flex items-center gap-2 px-4 py-2 min-w-[100px] text-white bg-green-600 hover:bg-green-700 border-0"
+                        >
+                          <RotateCcw className="h-4 w-4" />
+                          Restaurar
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </>
   )
