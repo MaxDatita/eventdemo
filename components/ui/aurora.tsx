@@ -3,7 +3,7 @@
 import type React from "react"
 import { forwardRef } from "react"
 import { Shader } from "react-shaders"
-import { cn } from "~/lib/utils"
+import { cn } from "@/lib/utils"
 
 export interface AuroraShadersProps extends React.HTMLAttributes<HTMLDivElement> {
   /**
