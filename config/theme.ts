@@ -1,4 +1,40 @@
 export const theme = {
+  // Configuración global de fondo para toda la demo
+  // mode: 'gradient' mantiene el fondo actual
+  // mode: 'aurora' activa el fondo aurora
+  background: {
+    mode: 'aurora', // 'gradient' | 'aurora' | 'bokeh' | 'smokey'
+    gradient: {
+      color1: '#000000',
+      color2: '#471069',
+      color3: '#196E76',
+    },
+    aurora: {
+      baseColor: '#ffffff',
+      color1: '#04724d',
+      color2: '#34d399',
+      color3: '#6ee7b7',
+      color4: '#ffffff',
+      color5: '#2dd4bf',
+      opacity: 1,
+      blur: 15,
+      animationSpeed: 12,
+    },
+    bokeh: {
+      count: 24,
+      minSize: 60,
+      maxSize: 220,
+      speed: 0.8,
+      overlayOpacity: 0.16,
+      vignetteOpacity: 0.7,
+    },
+    smokey: {
+      speed: 1,
+      opacity: 0.42,
+      blur: 95,
+      scale: 0.8,
+    },
+  },
  
 
   // Colores principales
@@ -51,10 +87,10 @@ export const theme = {
 
   // Configuración de fechas importantes
   dates: {
-    event: '2026-02-18T22:30:00', // Fecha del evento
-    contentActivation: '2026-02-01T00:00:00', // Fecha de activación del contenido
+    event: '2026-10-18T22:30:00', // Fecha del evento
+    contentActivation: '2026-10-01T00:00:00', // Fecha de activación del contenido
     rsvpDeadline: '2026-02-17T00:00:00', // Fecha límite para venta de tickets
-    liveEnd: '2026-02-18T23:59:59', // Fecha en que desaparece el indicador LIVE
+    liveEnd: '2026-10-19T06:59:59', // Fecha en que desaparece el indicador LIVE
   },
 
   // Enlaces y recursos
@@ -63,7 +99,13 @@ export const theme = {
     images: {
       carousel: ['/imgfest1.webp', '/imgfest2.webp', '/imgfest3.webp'],
       video: '/vidfest.mp4',
-      title: '/eventest.webp'
+      title: '/eventest.png'
+    },
+    heroGradientText: {
+      beforeCountdownEnds: 'Compartí con nosotros una noche inolvidable',
+      afterCountdownEnds: 'Gracias por acompañarnos',
+      colors: ['#04724d', '#34d399', '#588157'],
+      animationSpeed: 8,
     },
   },
 

@@ -1,7 +1,12 @@
 import { NextResponse } from 'next/server';
 import { MercadoPagoConfig, OAuth } from 'mercadopago';
+import { demoFeatures, pausedFeatureMessage } from '@/config/feature-flags';
 
 export async function GET() {
+  if (!demoFeatures.payments) {
+    return NextResponse.json({ error: pausedFeatureMessage }, { status: 503 });
+  }
+
   try {
     const client = new MercadoPagoConfig({ 
       accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN! 

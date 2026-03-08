@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Button } from "./button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "./dialog"
-import { ShoppingCart } from 'lucide-react'
+import { UtensilsCrossed } from 'lucide-react'
 import { theme } from '@/config/theme'
 import { useDemoDates } from '@/contexts/DemoContext'
 
@@ -122,13 +122,13 @@ export function MenuModal({ data = defaultMenuData, buttonText = "Consumibles" }
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="primary" className="w-full flex items-center justify-center">
-          <ShoppingCart className="mr-2 h-4 w-4" /> {buttonText}
+        <Button variant="invitation" className="w-full flex items-center justify-center">
+          <UtensilsCrossed className="mr-2 h-4 w-4" /> {buttonText}
         </Button>
       </DialogTrigger>
       <DialogContent className={`sm:max-w-[425px] max-h-[500px] flex flex-col ${isDarkMode ? 'dark bg-gray-900 text-white' : ''}`}>
-        <DialogHeader>
-          <DialogTitle className={`text-center mb-4 ${isDarkMode ? 'text-white' : ''}`}>{getModalTitle()}</DialogTitle>
+        <DialogHeader className="text-center">
+          <DialogTitle className={`text-center mb-4 font-semibold ${isDarkMode ? 'text-white' : 'text-[#04724d]'}`}>{getModalTitle()}</DialogTitle>
         </DialogHeader>
         
         {isContentActive ? (
@@ -136,15 +136,15 @@ export function MenuModal({ data = defaultMenuData, buttonText = "Consumibles" }
             {hasBebidas && hasComidas && (
               <div className="flex space-x-2 mb-4">
                 <Button 
-                  variant={selectedTab === 'bebidas' ? "primary" : "secondary"}
-                  className="flex-1"
+                  variant="invitation"
+                  className={`flex-1 ${selectedTab !== 'bebidas' ? 'bg-[#04724d]/20 hover:bg-[#04724d]/30 text-[#04724d] border border-[#04724d]/40' : ''}`}
                   onClick={() => setSelectedTab('bebidas')}
                 >
                   Bebidas
                 </Button>
                 <Button 
-                  variant={selectedTab === 'comidas' ? "primary" : "secondary"}
-                  className="flex-1"
+                  variant="invitation"
+                  className={`flex-1 ${selectedTab !== 'comidas' ? 'bg-[#04724d]/20 hover:bg-[#04724d]/30 text-[#04724d] border border-[#04724d]/40' : ''}`}
                   onClick={() => setSelectedTab('comidas')}
                 >
                   Comidas

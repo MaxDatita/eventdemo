@@ -1,8 +1,11 @@
 import type { Metadata, Viewport } from "next";
+import type { CSSProperties } from "react";
 import { Toaster } from "sonner";
 import "./globals.css";
 import Providers from './providers'
 import { PreconnectLinks } from '@/components/preconnect-links'
+import { theme } from '@/config/theme'
+import { BackgroundLayer } from '@/components/ui/background-layer'
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -62,14 +65,29 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
+  const backgroundMode = theme.background?.mode || 'gradient'
+  const auroraBaseColor = theme.background?.aurora?.baseColor || '#07070c'
+
   return (
-    <html lang="es">
-      <body>
-        <PreconnectLinks />
-        <Providers>
-          {children}
-          <Toaster />
-        </Providers>
+    <html
+      lang="es"
+      className={`theme-bg-${backgroundMode}`}
+      style={{ '--aurora-base-color': auroraBaseColor } as CSSProperties}
+    >
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap" rel="stylesheet" />
+      </head>
+      <body className={`theme-bg-${backgroundMode}`}>
+        <BackgroundLayer />
+        <div className="relative z-10">
+          <PreconnectLinks />
+          <Providers>
+            {children}
+            <Toaster />
+          </Providers>
+        </div>
       </body>
     </html>
   );

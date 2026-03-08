@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Button } from "./button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "./dialog"
-import { MapPin, Clock, Map, ArrowLeft, Route, X } from 'lucide-react'
+import { MapPin, Clock, Map, ArrowLeft, Route } from 'lucide-react'
 import Image from 'next/image'
 import { theme } from '@/config/theme'
 import { useDemoDates } from '@/contexts/DemoContext'
@@ -65,24 +65,28 @@ const MapModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className={`sm:max-w-[425px] p-0 overflow-hidden rounded-xl ${isDarkMode ? 'dark bg-gray-900 text-white border-gray-700' : 'bg-white'}`}>
-        <div className="relative w-full aspect-square">
-          <Button 
-            variant="secondary"
-            className={`absolute right-2 top-2 z-10 rounded-full ${isDarkMode ? 'bg-gray-800/80 hover:bg-gray-700/90 text-white' : 'bg-white/80 hover:bg-white/90'}`}
+      <DialogContent hideDefaultCloseButton className={`sm:max-w-[425px] p-0 overflow-hidden rounded-xl ${isDarkMode ? 'dark bg-gray-900 text-white border-gray-700' : 'bg-white'}`}>
+        <div className="relative w-[calc(100%+3rem)] -mx-6 aspect-square min-h-0 overflow-hidden">
+          <button
+            type="button"
+            aria-label="Cerrar y volver a Logística"
+            className="absolute right-2 top-2 z-10 h-9 w-9 rounded-full bg-[#04724d] hover:bg-[#036340] flex items-center justify-center text-white shadow-md transition-colors focus:outline-none focus:ring-2 focus:ring-white/50"
             onClick={() => {
               onClose()
               onReturn()
             }}
           >
-            <X className="h-4 w-4" />
-          </Button>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+              <path d="M18 6 6 18" />
+              <path d="M6 6 18 18" />
+            </svg>
+          </button>
           <Image
             src={imageUrl}
             alt="Mapa del venue"
             fill
-            className="rounded-lg"
-            style={{ objectFit: 'cover' }}
+            className="rounded-lg object-cover object-center"
+            sizes="(max-width: 425px) 100vw, 425px"
             priority
           />
         </div>
@@ -144,7 +148,7 @@ export function LogisticsModal({ data = defaultLogisticsData }: LogisticsModalPr
             </div>
             <div className={`p-4 border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
               <Button 
-                variant="secondary"
+                variant="invitation"
                 className="w-full flex items-center justify-center"
                 onClick={() => setContentType('main')}
               >
@@ -162,7 +166,7 @@ export function LogisticsModal({ data = defaultLogisticsData }: LogisticsModalPr
             </div>
             <div className={`p-4 border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}>
               <Button 
-                variant="secondary"
+                variant="invitation"
                 className="w-full flex items-center justify-center"
                 onClick={() => setContentType('main')}
               >
@@ -177,7 +181,7 @@ export function LogisticsModal({ data = defaultLogisticsData }: LogisticsModalPr
         return (
           <div className={`space-y-4 p-4 ${isDarkMode ? 'text-white' : ''}`}>
             <Button 
-              variant="primary"
+              variant="invitation"
               className="w-full flex items-center justify-center"
               onClick={() => window.open(data.googleMapsUrl, '_blank')}
             >
@@ -186,7 +190,7 @@ export function LogisticsModal({ data = defaultLogisticsData }: LogisticsModalPr
             </Button>
 
             <Button 
-              variant="secondary"
+              variant="invitation"
               className="w-full flex items-center justify-center"
               onClick={() => setContentType('schedule')}
             >
@@ -195,7 +199,7 @@ export function LogisticsModal({ data = defaultLogisticsData }: LogisticsModalPr
             </Button>
 
             <Button 
-              variant="secondary"
+              variant="invitation"
               className="w-full flex items-center justify-center"
               onClick={handleShowMap}
             >
@@ -211,13 +215,13 @@ export function LogisticsModal({ data = defaultLogisticsData }: LogisticsModalPr
     <>
       <Dialog open={isOpen} onOpenChange={handleOpenChange}>
         <DialogTrigger asChild>
-          <Button variant="primary" className="w-full flex items-center justify-center">
+          <Button variant="invitation" className="w-full flex items-center justify-center">
             <Route className="mr-2 h-4 w-4" /> Logística
           </Button>
         </DialogTrigger>
         <DialogContent className={`sm:max-w-[425px] ${getDialogHeight()} flex flex-col ${isDarkMode ? 'dark bg-gray-900 text-white border-gray-700' : 'bg-white'}`}>
-          <DialogHeader>
-            <DialogTitle className={isDarkMode ? 'text-white' : ''}>{contentType === 'schedule' ? "Cronograma del Evento" : "Logística del Evento"}</DialogTitle>
+          <DialogHeader className="text-center">
+            <DialogTitle className={`text-center font-semibold ${isDarkMode ? 'text-white' : 'text-[#04724d]'}`}>{contentType === 'schedule' ? "Cronograma del Evento" : "Logística del Evento"}</DialogTitle>
           </DialogHeader>
 
           <div className="flex-1 overflow-hidden">

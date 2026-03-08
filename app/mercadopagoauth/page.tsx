@@ -5,9 +5,23 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Loader2 } from 'lucide-react'
 import Image from 'next/image'
+import { demoFeatures, pausedFeatureMessage } from '@/config/feature-flags'
 export default function MercadoPagoAuthPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  if (!demoFeatures.payments) {
+    return (
+      <div className="min-h-screen pt-6 pb-6 pl-6 pr-6 bg-gradient-animation flex items-center justify-center">
+        <Card className="w-full max-w-md rounded-xl p-8">
+          <div className="text-center space-y-4">
+            <h1 className="heading-h1-alt">Pagos en pausa</h1>
+            <p className="body-base-alt">{pausedFeatureMessage}</p>
+          </div>
+        </Card>
+      </div>
+    )
+  }
 
   const handleAuthorize = async () => {
     setIsLoading(true)

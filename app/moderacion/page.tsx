@@ -276,7 +276,7 @@ function ModerationContent() {
             {isRejected ? (
               <Button
                 onClick={() => handleRestorePhoto(photo)}
-                className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2 px-5 py-2 rounded-full"
+                className="bg-[#FF914E] hover:bg-[#ff8132] text-white flex items-center gap-2 px-5 py-2 rounded-full"
               >
                 <Check className="h-4 w-4" />
                 <span>Restaurar</span>
@@ -294,7 +294,7 @@ function ModerationContent() {
               <>
                 <Button
                   onClick={() => handleModeration(photo.id, 'approve')}
-                  className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2 px-5 py-2 rounded-full"
+                  className="bg-[#FF914E] hover:bg-[#ff8132] text-white flex items-center gap-2 px-5 py-2 rounded-full"
                 >
                   <Check className="h-4 w-4" />
                   <span>Aprobar</span>

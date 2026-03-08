@@ -4,8 +4,8 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&display=swap');
-
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
 @layer base {
   * {
     box-sizing: border-box;
@@ -15,16 +15,16 @@
     height: 100%;
     height: -webkit-fill-available;
     overflow-x: hidden;
-    /* Fondo base que siempre será visible - extendido para cubrir notch y navegación */
-    background: linear-gradient(140deg, 
-      #000000 0%,
-      #471069 55%,
-      #196E76 100%
-    );
+    /* Fondo base neutro: la capa global configurable pinta el fondo real */
+    background: var(--aurora-base-color, #07070c);
     background-attachment: fixed;
     background-size: cover;
     background-repeat: no-repeat;
     background-position: center;
+  }
+
+  html.theme-bg-aurora {
+    background: var(--aurora-base-color, #07070c) !important;
   }
 
   body {
@@ -37,16 +37,16 @@
     overflow-x: hidden;
     width: 100%;
     position: relative;
-    /* Fondo de respaldo que cubre todo */
-    background: linear-gradient(140deg, 
-      #000000 0%,
-      #471069 55%,
-      #196E76 100%
-    );
+    /* Fondo neutro: la capa global configurable pinta el fondo real */
+    background: transparent;
     background-attachment: fixed;
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
+  }
+
+  body.theme-bg-aurora {
+    background: transparent !important;
   }
 
   /* Font families */
@@ -61,18 +61,22 @@
   .font-literary {
     font-family: 'Playfair Display', serif;
   }
+
+  .font-nunito {
+    font-family: 'Nunito', sans-serif;
+  }
+
+  .font-bebas {
+    font-family: 'Bebas Neue', sans-serif;
+  }
 }
 
 @layer components {
-  /* Gradiente de fondo - extendido para cubrir notch y barra de navegación */
+  /* Gradiente de fondo - extendido para cubrir notch y barra de navegaci?n */
   .bg-gradient-animation {
-    background: linear-gradient(140deg, 
-      #000000 0%,      /* Color1 */
-      #471069 55%,     /* Color2 */
-      #196E76 100%     /* Color3 */
-    );
+    background: transparent;
     position: fixed;
-    /* Extender más arriba y abajo para cubrir notch y navegación del navegador */
+    /* Extender m?s arriba y abajo para cubrir notch y navegaci?n del navegador */
     top: -200px;
     left: 0;
     right: 0;
@@ -86,9 +90,51 @@
     background-attachment: fixed;
     background-size: cover;
     background-position: center;
-    /* Extender el fondo para cubrir áreas seguras */
+    /* Extender el fondo para cubrir ?reas seguras */
     margin-top: calc(-1 * env(safe-area-inset-top, 0px));
     margin-bottom: calc(-1 * env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Legacy background layer desactivada: se mantiene en el DOM pero no pinta */
+  .bg-gradient-animation {
+    display: none !important;
+  }
+
+  html.theme-bg-aurora .bg-gradient-animation,
+  body.theme-bg-aurora .bg-gradient-animation {
+    display: none !important;
+    background: none !important;
+  }
+
+  .aurora-bg {
+    position: fixed;
+    inset: -20%;
+    width: 140%;
+    height: 140%;
+    overflow: hidden;
+    pointer-events: none;
+    background:
+      radial-gradient(45% 40% at 10% 20%, var(--aurora-c1) 0%, transparent 60%),
+      radial-gradient(40% 45% at 90% 15%, var(--aurora-c2) 0%, transparent 62%),
+      radial-gradient(45% 40% at 25% 80%, var(--aurora-c3) 0%, transparent 60%),
+      radial-gradient(40% 42% at 80% 78%, var(--aurora-c4) 0%, transparent 62%);
+    opacity: var(--aurora-opacity, 0.35);
+    filter: blur(var(--aurora-blur, 90px));
+    animation: aurora-drift 18s ease-in-out infinite alternate;
+    transform: translate3d(0, 0, 0);
+    will-change: transform;
+  }
+
+  @keyframes aurora-drift {
+    0% {
+      transform: translate3d(-2%, -1%, 0) scale(1.02);
+    }
+    50% {
+      transform: translate3d(2%, 1.5%, 0) scale(1.08);
+    }
+    100% {
+      transform: translate3d(1%, -1.5%, 0) scale(1.04);
+    }
   }
 
   .animate-bounce {
@@ -147,7 +193,7 @@
   .message-card {
     @apply w-64 flex-shrink-0 p-4 bg-white rounded-xl border border-gray-200 shadow-md cursor-pointer 
     hover:shadow-lg hover:border-purple-200 transition-all duration-200;
-    height: 120px; /* Altura fija para mostrar 2 líneas */
+    height: 120px; /* Altura fija para mostrar 2 l?neas */
   }
 
   .message-card-content {
@@ -169,7 +215,7 @@
 
   /* Title Image */
   .title-image {
-    @apply mx-auto mb-6;
+    @apply mx-auto block;
     width: var(--title-width, 300px);
     height: var(--title-height, auto);
     object-fit: contain;
@@ -177,16 +223,20 @@
 
   .title-image-container {
     @apply flex justify-center items-center;
+    height: fit-content;
     margin: var(--title-margin, 2rem 0);
+    margin-bottom: 1.5rem;
   }
 
-  /* Countdown styles */
+  /* Countdown styles (paleta base #04724d) */
   .countdown-container {
-    @apply grid grid-cols-4 gap-2 text-center mb-6 bg-white/10 p-4 rounded-xl backdrop-blur-sm;
+    @apply grid grid-cols-4 gap-2 text-center mb-6 p-4 rounded-2xl backdrop-blur-sm;
+    background: linear-gradient(135deg, rgba(4, 114, 77, 0.25), rgba(5, 138, 92, 0.35));
   }
 
   .countdown-item {
-    @apply flex flex-col items-center justify-center p-2 rounded-lg bg-pink-500/70 backdrop-blur-sm;
+    @apply flex flex-col items-center justify-center p-2 rounded-2xl backdrop-blur-sm;
+    background-color: #04724d;
   }
 
   .countdown-number {
@@ -198,8 +248,8 @@
   }
 
   .countdown-message {
-    @apply body-large text-center mb-2 bg-gradient-to-r from-pink-400 to-pink-600 
-    text-white p-4 rounded-xl backdrop-blur-sm;
+    @apply body-large text-center mb-2 text-white p-4 rounded-xl backdrop-blur-sm;
+    background: linear-gradient(to right, #04724d, #058a5c);
   }
 
   /* Live indicator */
@@ -213,16 +263,18 @@
     animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
 
-  /* DEMO: Badge de modo demo */
+  /* DEMO: Badge de modo demo (misma tonalidad y alineaci?n que bot?n del panel) */
   .demo-badge {
-    @apply fixed top-4 left-4 bg-purple-600 text-white px-3 py-1 
+    @apply fixed top-6 left-6 text-white px-3 py-1 
     rounded-full backdrop-blur-sm z-50 shadow-lg;
+    background-color: #FF914E;
   }
 
   /* DEMO: Badge de modo demo centrado abajo */
   .demo-badge-center-bottom {
-    @apply bg-purple-600 text-white px-3 py-1 
+    @apply text-white px-3 py-1 
     rounded-full backdrop-blur-sm shadow-lg flex items-center justify-center;
+    background-color: #FF914E;
   }
 
   @keyframes pulse {
@@ -282,7 +334,7 @@
     min-height: -webkit-fill-available;
     min-height: 100dvh;
     padding: 1.5rem;
-    /* Asegurar padding adicional arriba y abajo para cubrir notch y navegación */
+    /* Asegurar padding adicional arriba y abajo para cubrir notch y navegaci?n */
     padding-top: max(1.5rem, calc(env(safe-area-inset-top, 0px) + 1.5rem));
     padding-bottom: max(1.5rem, calc(env(safe-area-inset-bottom, 0px) + 1.5rem));
     overflow-y: auto;
@@ -296,7 +348,7 @@
     background: transparent;
   }
 
-  /* Efecto flotante para imágenes de proyección */
+  /* Efecto flotante para im?genes de proyecci?n */
   .photo-float {
     animation: photoFloat 3s ease-in-out infinite;
   }
@@ -310,7 +362,7 @@
     }
   }
 
-  /* Animación de aparición para imágenes */
+  /* Animaci?n de aparici?n para im?genes */
   .photo-appear {
     animation: photoAppear 0.8s ease-out forwards;
     opacity: 0;
@@ -333,7 +385,7 @@
     }
   }
 
-  /* Animación para el mensaje */
+  /* Animaci?n para el mensaje */
   .message-animation {
     animation: messageSlideIn 0.6s ease-out;
   }
@@ -347,5 +399,91 @@
       opacity: 1;
       transform: translateY(0) scale(1);
     }
+  }
+
+  @keyframes smokey-drift {
+    0% {
+      transform: translate(-50%, -50%) scale(1) rotate(0deg);
+    }
+    50% {
+      transform: translate(-45%, -55%) scale(1.15) rotate(4deg);
+    }
+    100% {
+      transform: translate(-55%, -45%) scale(0.92) rotate(-4deg);
+    }
+  }
+
+  .smoke-blob {
+    position: absolute;
+    width: 42vw;
+    height: 42vw;
+    min-width: 260px;
+    min-height: 260px;
+    border-radius: 9999px;
+    filter: blur(95px);
+    opacity: 0.42;
+    will-change: transform;
+    pointer-events: none;
+    mix-blend-mode: screen;
+  }
+
+  .smoke-blob-a {
+    left: -8%;
+    top: 8%;
+    background: radial-gradient(circle, rgba(25, 110, 118, 0.75) 0%, rgba(25, 110, 118, 0) 68%);
+    animation: smoke-float-a 14s ease-in-out infinite alternate;
+  }
+
+  .smoke-blob-b {
+    right: -10%;
+    top: 10%;
+    background: radial-gradient(circle, rgba(4, 114, 77, 0.72) 0%, rgba(4, 114, 77, 0) 70%);
+    animation: smoke-float-b 18s ease-in-out infinite alternate;
+  }
+
+  .smoke-blob-c {
+    left: 28%;
+    top: 35%;
+    background: radial-gradient(circle, rgba(52, 211, 153, 0.55) 0%, rgba(52, 211, 153, 0) 70%);
+    animation: smoke-float-c 16s ease-in-out infinite alternate;
+  }
+
+  .smoke-blob-d {
+    left: -6%;
+    bottom: -12%;
+    background: radial-gradient(circle, rgba(20, 184, 166, 0.58) 0%, rgba(20, 184, 166, 0) 72%);
+    animation: smoke-float-d 20s ease-in-out infinite alternate;
+  }
+
+  .smoke-blob-e {
+    right: -8%;
+    bottom: -10%;
+    background: radial-gradient(circle, rgba(25, 110, 118, 0.5) 0%, rgba(25, 110, 118, 0) 72%);
+    animation: smoke-float-e 17s ease-in-out infinite alternate;
+  }
+
+  @keyframes smoke-float-a {
+    0% { transform: translate3d(0, 0, 0) scale(1); }
+    100% { transform: translate3d(12vw, 7vh, 0) scale(1.2); }
+  }
+
+  @keyframes smoke-float-b {
+    0% { transform: translate3d(0, 0, 0) scale(1); }
+    100% { transform: translate3d(-10vw, 9vh, 0) scale(1.15); }
+  }
+
+  @keyframes smoke-float-c {
+    0% { transform: translate3d(0, 0, 0) scale(1); }
+    100% { transform: translate3d(5vw, -10vh, 0) scale(1.18); }
+  }
+
+  @keyframes smoke-float-d {
+    0% { transform: translate3d(0, 0, 0) scale(1); }
+    100% { transform: translate3d(11vw, -8vh, 0) scale(1.22); }
+  }
+
+  @keyframes smoke-float-e {
+    0% { transform: translate3d(0, 0, 0) scale(1); }
+    100% { transform: translate3d(-9vw, -7vh, 0) scale(1.16); }
   }
 }

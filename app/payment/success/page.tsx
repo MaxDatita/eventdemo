@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { Card } from "@/components/ui/card"
 import { CheckCircle } from 'lucide-react'
 import { sendTicketEmail } from '@/services/email'
+import { demoFeatures, pausedFeatureMessage } from '@/config/feature-flags'
 
 interface PaymentData {
   nombre: string;
@@ -54,6 +55,8 @@ function SuccessContent() {
   const searchParams = useSearchParams()
   
   useEffect(() => {
+    if (!demoFeatures.payments) return;
+
     const processPayment = async () => {
       try {
         const quantity = parseInt(searchParams.get('quantity') || '1');
@@ -85,6 +88,19 @@ function SuccessContent() {
       processPayment();
     }
   }, [router, searchParams]);
+
+  if (!demoFeatures.payments) {
+    return (
+      <div className="min-h-screen pt-6 pb-6 pl-6 pr-6 bg-gradient-animation flex items-center justify-center">
+        <Card className="auth-card rounded-xl">
+          <div className="auth-card-content">
+            <h1 className="auth-card-title">Pagos en pausa</h1>
+            <p className="auth-card-text">{pausedFeatureMessage}</p>
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen pt-6 pb-6 pl-6 pr-6 bg-gradient-animation flex items-center justify-center">

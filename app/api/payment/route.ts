@@ -1,7 +1,12 @@
 import { NextResponse } from 'next/server';
 import { createPreference } from '@/lib/mercadopago';
+import { demoFeatures, pausedFeatureMessage } from '@/config/feature-flags';
 
 export async function POST(request: Request) {
+  if (!demoFeatures.payments) {
+    return NextResponse.json({ error: pausedFeatureMessage }, { status: 503 });
+  }
+
   try {
     const body = await request.json();
     

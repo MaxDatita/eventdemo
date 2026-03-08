@@ -165,8 +165,9 @@ export function PhotoCameraModal({ isOpen, onClose }: PhotoCameraModalProps) {
             
             {/* Botón siempre visible para abrir cámara nativa */}
             <Button 
+              variant="invitation"
               onClick={openCameraPicker}
-              className="w-full rounded-2xl flex items-center justify-center gap-2 bg-pink-500 hover:bg-pink-600 text-white"
+              className="w-full rounded-2xl flex items-center justify-center gap-2"
             >
               <Camera className="h-4 w-4" />
               <span>Abrir Cámara</span>
@@ -234,8 +235,9 @@ export function PhotoCameraModal({ isOpen, onClose }: PhotoCameraModalProps) {
                 <span>Volver</span>
               </Button>
               <Button 
+                variant="invitation"
                 onClick={() => setStep('preview')} 
-                className="flex-1 rounded-lg flex items-center justify-center gap-2 bg-pink-500 hover:bg-pink-600 text-white"
+                className="flex-1 rounded-lg flex items-center justify-center gap-2"
               >
                 <Check className="h-4 w-4" />
                 <span>Continuar</span>
@@ -275,8 +277,9 @@ export function PhotoCameraModal({ isOpen, onClose }: PhotoCameraModalProps) {
                 <span>Editar</span>
               </Button>
               <Button 
+                variant="invitation"
                 onClick={handleUpload} 
-                className="flex-1 rounded-lg flex items-center justify-center gap-2 bg-pink-500 hover:bg-pink-600 text-white"
+                className="flex-1 rounded-lg flex items-center justify-center gap-2"
               >
                 <Upload className="h-4 w-4" />
                 <span>Compartir</span>
@@ -351,5 +354,4 @@ export function PhotoCameraModal({ isOpen, onClose }: PhotoCameraModalProps) {
     </Dialog>
   );
 }
-
 

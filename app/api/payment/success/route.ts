@@ -1,7 +1,12 @@
 import { NextResponse } from 'next/server';
 import { registrarTickets } from '@/lib/google-sheets-registros';
+import { demoFeatures, pausedFeatureMessage } from '@/config/feature-flags';
 
 export async function POST(request: Request) {
+  if (!demoFeatures.payments) {
+    return NextResponse.json({ error: pausedFeatureMessage }, { status: 503 });
+  }
+
   try {
     const { nombre, email, tipoTicket, quantity } = await request.json();
 

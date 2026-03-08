@@ -44,7 +44,7 @@ export default function PinInput({ onValidPin }: PinInputProps) {
         <div className="w-full max-w-md pt-8 pb-6 px-6 text-center flex-shrink-0 mt-36">
           <div className="title-image-container mb-3">
             <Image
-              src="/eventest.webp"
+              src="/eventest.png"
               alt="Eventest"
               width={300}
               height={100}

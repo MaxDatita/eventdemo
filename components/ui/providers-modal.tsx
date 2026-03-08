@@ -88,14 +88,17 @@ export function ProvidersModal() {
           Proveedores del Evento
         </button>
       </DialogTrigger>
-      <DialogContent className={`sm:max-w-[500px] max-h-[80vh] flex flex-col ${isDarkMode ? 'dark bg-gray-900 text-white border-gray-700' : 'bg-white'}`}>
-        <DialogHeader>
-          <DialogTitle className={isDarkMode ? 'text-white' : ''}>
+      <DialogContent
+        scrollContentOnly
+        className={`sm:max-w-[500px] max-h-[80vh] flex flex-col ${isDarkMode ? 'dark bg-gray-900 text-white border-gray-700' : 'bg-white'}`}
+      >
+        <DialogHeader className={`shrink-0 ${isDarkMode ? 'bg-gray-900' : 'bg-white'}`}>
+          <DialogTitle className={`text-center font-semibold ${isDarkMode ? 'text-white' : 'text-[#04724d]'}`}>
             Proveedores del Evento
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto py-4 space-y-4">
+        <div className="flex-1 min-h-0 overflow-y-auto py-4 space-y-4">
           {providers.length === 0 ? (
             <div className="text-center py-8">
               <Building2 className={`h-12 w-12 mx-auto mb-4 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`} />

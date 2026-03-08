@@ -2,10 +2,15 @@ import { NextResponse } from 'next/server';
 import { GoogleSpreadsheet } from 'google-spreadsheet';
 import { JWT } from 'google-auth-library';
 import { theme } from '@/config/theme';
+import { demoFeatures, pausedFeatureMessage } from '@/config/feature-flags';
 
 // Endopoint para verificar disponibilidad de tickets en caso de que la venta por lotes esté habilitada
 
 export async function GET(request: Request) {
+  if (!demoFeatures.tickets) {
+    return NextResponse.json({ error: pausedFeatureMessage }, { status: 503 });
+  }
+
   try {
     const { searchParams } = new URL(request.url);
     const ticketType = searchParams.get('type');

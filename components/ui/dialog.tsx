@@ -32,10 +32,16 @@ const DialogOverlay = React.forwardRef<
 ))
 DialogOverlay.displayName = DialogPrimitive.Overlay.displayName
 
+type DialogContentProps = React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & {
+  hideDefaultCloseButton?: boolean;
+  /** Si es true, el scroll solo aplica al contenido que envuelvas en overflow-y-auto; el header no se desplaza */
+  scrollContentOnly?: boolean;
+};
+
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
->(({ className, children, ...props }, ref) => {
+  DialogContentProps
+>(({ className, children, hideDefaultCloseButton = false, scrollContentOnly = false, ...props }, ref) => {
   const { isDarkMode } = useDemoDates();
   
   return (
@@ -59,12 +65,17 @@ const DialogContent = React.forwardRef<
         {...props}
       >
         <div className="flex flex-col flex-1 min-h-0 overflow-hidden relative">
-          <DialogPrimitive.Close className={`absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground z-20 ${isDarkMode ? 'text-white' : ''}`}>
-            <X className="h-4 w-4" />
-            <span className="sr-only">Close</span>
-          </DialogPrimitive.Close>
-          <div className="flex flex-col flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-6 pb-6 w-full">
-            <div className="w-full min-w-0">
+          {!hideDefaultCloseButton && (
+            <DialogPrimitive.Close className={`absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground z-20 ${isDarkMode ? 'text-white' : ''}`}>
+              <X className="h-4 w-4" />
+              <span className="sr-only">Close</span>
+            </DialogPrimitive.Close>
+          )}
+          <div className={cn(
+            "flex flex-col flex-1 min-h-0 px-6 pb-6 w-full",
+            scrollContentOnly ? "overflow-hidden" : "overflow-y-auto overflow-x-hidden"
+          )}>
+            <div className="w-full min-w-0 flex flex-col flex-1 min-h-0">
               {children}
             </div>
           </div>

@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { MessageSquare, MailPlus, Image as ImageIcon, Ticket, Camera, Film, Users } from 'lucide-react'
 import Image from 'next/image'
 import { theme } from '@/config/theme';
+import { demoFeatures } from '@/config/feature-flags';
 import { StyledDialog } from "@/components/ui/styled-dialog"
 import { MenuModal } from "@/components/ui/menu-modal"
 import { LogisticsModal } from "@/components/ui/logistics-modal"
@@ -17,6 +18,7 @@ import { ProvidersModal } from "@/components/ui/providers-modal"
 import { Card } from "@/components/ui/card"
 import { PhotoCameraModal } from "@/components/photo-camera-modal"
 import { PhotoWall } from "@/components/photo-wall"
+import GradientText from "@/components/GradientText"
 import { toast } from 'sonner'
 import { demoMessages, DemoMessage } from '@/data/demo-messages'
 import { useDemoDates } from '@/contexts/DemoContext'
@@ -227,6 +229,10 @@ export function InvitacionDigitalComponent() {
   }, [eventStarted, carouselMessages.length])
 
   const isContentActive = isDemoMode ? isEventLive : (currentDate >= contentActivationDate)
+  const heroGradientConfig = theme.resources.heroGradientText
+  const heroGradientPhrase = eventStarted
+    ? heroGradientConfig?.afterCountdownEnds || 'El evento ya comenzo'
+    : heroGradientConfig?.beforeCountdownEnds || 'Falta muy poco para el evento'
 
   const handleMessageClick = useCallback((message: { id: number; nombre: string; mensaje: string }) => {
     setSelectedMessage({
@@ -368,22 +374,22 @@ export function InvitacionDigitalComponent() {
             Tu navegador no soporta el tag de video.
           </video>
 
-          <div className="title-image-container">
-            <Image
-              src={theme.resources.images.title}
-              alt="Eventest"
-              width={300}
-              height={100}
-              className="title-image"
-              priority
-            />
+          <div className="title-image-container !my-5">
+            <GradientText
+              colors={heroGradientConfig?.colors || ["#FFCF6E", "#FF914E", "#196E76"]}
+              animationSpeed={heroGradientConfig?.animationSpeed || 8}
+              showBorder={false}
+              className="!cursor-default select-none text-center text-2xl md:text-3xl font-secondary leading-tight px-4"
+            >
+              {heroGradientPhrase}
+            </GradientText>
           </div>
 
           {/* <h1 className="heading-h1">
             Celebremos Juntos
           </h1> */}
 
-          <div className="relative w-full aspect-square mb-4 rounded-xl overflow-hidden">
+          <div className="relative w-full aspect-square mb-4 rounded-xl overflow-hidden shadow-lg">
             {theme.resources.images.carousel.map((src, index) => (
               <Image
                 key={index}
@@ -397,8 +403,8 @@ export function InvitacionDigitalComponent() {
             ))}
           </div>
 
-          <p className="heading-h2 mt-4 mb-4">
-            {eventStarted ? 'El evento ya comenzó, disfrutá la fiesta!' : <span>Te invitamos a vivir una noche inolvidable! 🎉 <br /> No te lo puedes perder 🔊🎶🥂</span>}
+          <p className="heading-h2 font-nunito font-normal text-gray-800 mt-8 mb-8">
+            {eventStarted ? 'El evento ya comenzó, disfrutá la fiesta!' : <span>Te invitamos a vivir con nosotros este momento tan especial en nuestras vidas.<br /> Queremos que seas parte de la historia 💕</span>}
           </p>
 
           {eventStarted ? (
@@ -407,18 +413,35 @@ export function InvitacionDigitalComponent() {
                 <p className={`text-center mt-12 mb-12 ${isDarkMode ? 'text-white' : ''}`}>Sé el primero en dejar un mensaje</p>
               ) : (
                 <>
-                  <div ref={carouselRef} className="overflow-x-hidden whitespace-nowrap">
-                    <div className="inline-flex gap-4" style={{ width: `${carouselMessages.length * 272 * 2}px` }}>
-                      {carouselMessages.map((message: DemoMessage) => (
-                        <MessageCard key={message.id} message={message} onClick={() => handleMessageClick(message)} />
-                      ))}
-                      {carouselMessages.map((message: DemoMessage) => (
-                        <MessageCard key={`duplicate-${message.id}`} message={message} onClick={() => handleMessageClick(message)} />
-                      ))}
+                  <div className="relative">
+                    <div ref={carouselRef} className="overflow-x-hidden whitespace-nowrap">
+                      <div className="inline-flex gap-4" style={{ width: `${carouselMessages.length * 272 * 2}px` }}>
+                        {carouselMessages.map((message: DemoMessage) => (
+                          <MessageCard key={message.id} message={message} onClick={() => handleMessageClick(message)} />
+                        ))}
+                        {carouselMessages.map((message: DemoMessage) => (
+                          <MessageCard key={`duplicate-${message.id}`} message={message} onClick={() => handleMessageClick(message)} />
+                        ))}
+                      </div>
                     </div>
+                    {/* Bordes difuminados donde entran/salen las tarjetas */}
+                    <div
+                      className="absolute left-0 top-0 bottom-0 w-16 pointer-events-none z-10"
+                      style={{
+                        background: `linear-gradient(to right, ${isDarkMode ? 'rgb(17 24 39)' : 'white'}, transparent)`,
+                      }}
+                      aria-hidden
+                    />
+                    <div
+                      className="absolute right-0 top-0 bottom-0 w-16 pointer-events-none z-10"
+                      style={{
+                        background: `linear-gradient(to left, ${isDarkMode ? 'rgb(17 24 39)' : 'white'}, transparent)`,
+                      }}
+                      aria-hidden
+                    />
                   </div>
                   <Button 
-                    variant="primary" 
+                    variant="invitation" 
                     className="flex mt-4 w-full items-center justify-center" 
                     onClick={() => setSelectedMessage({ 
                       nombre: 'Todos los mensajes', 
@@ -436,8 +459,8 @@ export function InvitacionDigitalComponent() {
                 Te esperamos este {eventDate.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}  
                 , {eventDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', hour12: false })}hs para pasar una noche inolvidable.
               </div>
-              <div className='body-base text-center mb-2'> 
-                {isDemoMode && isCountdownActive ? 'Iniciando evento en:' : 'Faltan:'} 
+              <div className='body-base font-nunito text-gray-800 text-center mb-2'>
+                {isDemoMode && isCountdownActive ? 'Iniciando evento en:' : 'Faltan:'}
               </div>
               <div className="countdown-container">
                 <div className="countdown-item">
@@ -477,7 +500,7 @@ export function InvitacionDigitalComponent() {
               preventCloseWhenChildrenOpen={showPhotoCamera || showPhotoWall}
               trigger={
                 <Button 
-                  variant="primary" 
+                  variant="invitation" 
                   className="flex items-center justify-center"
                   onClick={() => setShowContentModal(true)}
                 >
@@ -495,7 +518,7 @@ export function InvitacionDigitalComponent() {
                     {/* Botón Principal: Contenido Oficial */}
                     <div className="w-full space-y-2">
                       <Button
-                        variant="primary"
+                        variant="invitation"
                         className="w-full flex items-center justify-center gap-2 py-6"
                         onClick={() => window.open(theme.resources.contentLink, "_blank")}
                       >
@@ -512,7 +535,7 @@ export function InvitacionDigitalComponent() {
                       {/* Galería de Invitados */}
                       <div className="space-y-1">
                         <Button
-                          variant="secondary"
+                          variant="invitation"
                           className="w-full flex flex-col items-center justify-center gap-2 py-4 h-auto"
                           onClick={(e) => {
                             e.stopPropagation();
@@ -530,7 +553,7 @@ export function InvitacionDigitalComponent() {
                       {/* Compartir mi Foto */}
                       <div className="space-y-1">
                         <Button
-                          variant="secondary"
+                          variant="invitation"
                           className="w-full flex flex-col items-center justify-center gap-2 py-4 h-auto"
                           onClick={(e) => {
                             e.stopPropagation();
@@ -552,7 +575,7 @@ export function InvitacionDigitalComponent() {
                       Mirá el contenido previo del evento. El contenido completo estará disponible más cerca de la fecha del evento ⏳.
                     </p>
                     <Button
-                      variant="secondary"
+                      variant="invitation"
                       className="w-full flex items-center justify-center"
                       onClick={(e) => {
                         e.stopPropagation();
@@ -568,13 +591,13 @@ export function InvitacionDigitalComponent() {
             </StyledDialog>
             <Dialog open={isMessageDialogOpen} onOpenChange={setIsMessageDialogOpen}>
               <DialogTrigger asChild>
-                <Button variant="primary" className="flex items-center justify-center">
+                <Button variant="invitation" className="flex items-center justify-center">
                   <MessageSquare className="mr-2 h-4 w-4" /> Mensajes
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                  <DialogTitle>Deja un mensaje</DialogTitle>
+                <DialogHeader className="text-center">
+                  <DialogTitle className={`text-center font-semibold ${isDarkMode ? 'text-white' : 'text-[#04724d]'}`}>Deja un mensaje</DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmitMessage} className="grid gap-4 py-4">
                   {isContentActive ? (
@@ -600,6 +623,7 @@ export function InvitacionDigitalComponent() {
                       />
                       <Button 
                         type="submit" 
+                        variant="invitation"
                         disabled={isSubmitting}
                       >
                         {isSubmitting ? 'Enviando...' : 'Enviar mensaje'}
@@ -612,7 +636,7 @@ export function InvitacionDigitalComponent() {
                 </form>
               </DialogContent>
             </Dialog>
-            {isRsvpActive && (
+            {(demoFeatures.rsvp || demoFeatures.tickets) && isRsvpActive && (
               <>
                 <Dialog open={showExpirationModal} onOpenChange={setShowExpirationModal}>
                   <DialogContent className="sm:max-w-[425px]">
@@ -641,8 +665,8 @@ export function InvitacionDigitalComponent() {
                   // En modo demo, usar el modo del contexto; si no, usar el del theme
                   const buttonMode = isDemoMode ? rsvpMode : theme.rsvpButton.mode;
                   const shouldShowBoth = buttonMode === 'both' && isDemoMode;
-                  const shouldShowTickets = buttonMode === 'tickets' || shouldShowBoth;
-                  const shouldShowRsvp = buttonMode === 'rsvp' || shouldShowBoth;
+                  const shouldShowTickets = demoFeatures.tickets && (buttonMode === 'tickets' || shouldShowBoth);
+                  const shouldShowRsvp = demoFeatures.rsvp && (buttonMode === 'rsvp' || shouldShowBoth);
 
                   return (
                     <div className={`col-span-2 space-y-2`}>
@@ -773,7 +797,7 @@ export function InvitacionDigitalComponent() {
             className="hover:opacity-80 transition-opacity"
           >
             <Image
-              src="/logo-fondo-oscuro.png"  // Asegúrate de tener este archivo en la carpeta public
+              src="/logo-fondo-claro.png"
               alt="Eventechy"
               width={155}
               height={55}

@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Settings, Play, RotateCcw, Moon, Sun, Shield, LayoutDashboard, MessageSquare, Ticket, Users } from 'lucide-react'
 import { useDemoDates } from '@/contexts/DemoContext'
 import { toast } from 'sonner'
+import { demoFeatures } from '@/config/feature-flags'
 
 export function DemoControlPanel() {
   const {
@@ -84,7 +85,7 @@ export function DemoControlPanel() {
   }
 
   const handleNavigateToMessages = () => {
-    const messagesPath = rsvpMode === 'tickets' ? '/mensajes' : '/mensajesevent'
+    const messagesPath = demoFeatures.tickets && rsvpMode === 'tickets' ? '/mensajes' : '/mensajesevent'
     window.open(messagesPath, '_blank')
     togglePanel()
   }
@@ -93,7 +94,7 @@ export function DemoControlPanel() {
     <>
       <Button
         onClick={togglePanel}
-        className="fixed top-4 right-4 z-50 bg-purple-600 hover:bg-purple-700 text-white rounded-full p-3 shadow-lg"
+        className="fixed right-6 z-50 bg-[#FF914E] hover:bg-[#ff8132] text-white rounded-full p-3 shadow-lg top-[18px]"
       >
         <Settings className="h-5 w-5" />
       </Button>
@@ -113,8 +114,8 @@ export function DemoControlPanel() {
                 onClick={handleAction}
                 className={`w-full text-white font-semibold flex items-center justify-center ${
                   isEventLive 
-                    ? 'bg-orange-600 hover:bg-orange-700 dark:bg-orange-600 dark:hover:bg-orange-700' 
-                    : 'bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700'
+                    ? 'bg-[#FFCF6E] hover:bg-[#ffc24f] text-[#8A4A14]' 
+                    : 'bg-[#FF914E] hover:bg-[#ff8132]'
                 }`}
               >
                 {isEventLive ? (
@@ -158,7 +159,7 @@ export function DemoControlPanel() {
                 <div className="flex flex-col gap-2">
                   <Button
                     onClick={handleNavigateToModeration}
-                    className="w-full flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white"
+                    className="w-full flex items-center justify-center bg-[#FFCF6E] hover:bg-[#F5C55E] text-black"
                   >
                     <Shield className="mr-2 h-4 w-4" />
                     Moderación de Imágenes
@@ -166,7 +167,7 @@ export function DemoControlPanel() {
 
                   <Button
                     onClick={handleNavigateToDashboard}
-                    className="w-full flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 text-white"
+                    className="w-full flex items-center justify-center bg-[#FFCF6E] hover:bg-[#F5C55E] text-black"
                   >
                     <LayoutDashboard className="mr-2 h-4 w-4" />
                     Dashboard del Evento
@@ -174,7 +175,7 @@ export function DemoControlPanel() {
 
                   <Button
                     onClick={handleNavigateToMessages}
-                    className="w-full flex items-center justify-center bg-cyan-600 hover:bg-cyan-700 text-white"
+                    className="w-full flex items-center justify-center bg-[#FFCF6E] hover:bg-[#F5C55E] text-black"
                   >
                     <MessageSquare className="mr-2 h-4 w-4" />
                     Mensajes
@@ -182,6 +183,7 @@ export function DemoControlPanel() {
                 </div>
               </div>
 
+              {(demoFeatures.rsvp || demoFeatures.tickets) && (
               <div className="border-t border-gray-300 dark:border-gray-700 pt-3 mt-2">
                 <h3 className={`text-sm font-semibold mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                   Modo de Evento
@@ -191,8 +193,8 @@ export function DemoControlPanel() {
                     onClick={() => handleRsvpModeChange('tickets')}
                     className={`flex-1 flex items-center justify-center ${
                       rsvpMode === 'tickets'
-                        ? 'bg-purple-600 hover:bg-purple-700 text-white'
-                        : 'bg-gray-200 hover:bg-gray-300 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300'
+                        ? 'bg-[#FF914E] hover:bg-[#ff8132] text-white'
+                        : 'bg-[#FFF4DC] hover:bg-[#FFEDC8] text-[#B95D1B] dark:bg-[#FFF4DC] dark:hover:bg-[#FFEDC8] dark:text-[#B95D1B]'
                     }`}
                   >
                     <Ticket className="mr-2 h-4 w-4" />
@@ -202,8 +204,8 @@ export function DemoControlPanel() {
                     onClick={() => handleRsvpModeChange('rsvp')}
                     className={`flex-1 flex items-center justify-center ${
                       rsvpMode === 'rsvp'
-                        ? 'bg-purple-600 hover:bg-purple-700 text-white'
-                        : 'bg-gray-200 hover:bg-gray-300 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300'
+                        ? 'bg-[#FF914E] hover:bg-[#ff8132] text-white'
+                        : 'bg-[#FFF4DC] hover:bg-[#FFEDC8] text-[#B95D1B] dark:bg-[#FFF4DC] dark:hover:bg-[#FFEDC8] dark:text-[#B95D1B]'
                     }`}
                   >
                     <Users className="mr-2 h-4 w-4" />
@@ -211,6 +213,7 @@ export function DemoControlPanel() {
                   </Button>
                 </div>
               </div>
+              )}
             </div>
           </div>
         </DialogContent>

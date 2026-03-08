@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server'
+import { demoFeatures, pausedFeatureMessage } from '@/config/feature-flags'
 
 export async function POST(request: Request) {
+  if (!demoFeatures.scanner) {
+    return NextResponse.json({ error: pausedFeatureMessage }, { status: 503 })
+  }
+
   try {
     const { pin } = await request.json()
     const correctPin = '1234'

@@ -1,10 +1,15 @@
 import { NextResponse } from 'next/server';
 import { MercadoPagoConfig, OAuth } from 'mercadopago';
 import { saveSellerToken } from '@/lib/google-sheets-registros';
+import { demoFeatures } from '@/config/feature-flags';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
+  if (!demoFeatures.payments) {
+    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL}/mercadopagoauth/error?disabled=1`);
+  }
+
   try {
     const { searchParams } = new URL(request.url);
     const code = searchParams.get('code');
