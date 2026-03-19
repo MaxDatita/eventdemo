@@ -36,21 +36,30 @@ type DialogContentProps = React.ComponentPropsWithoutRef<typeof DialogPrimitive.
   hideDefaultCloseButton?: boolean;
   /** Si es true, el scroll solo aplica al contenido que envuelvas en overflow-y-auto; el header no se desplaza */
   scrollContentOnly?: boolean;
+  /** Clases adicionales para el botón de cerrar (ej. text-white top-2) */
+  closeButtonClassName?: string;
+  /** Clases para el icono X (ej. h-6 w-6) */
+  closeButtonIconClassName?: string;
+  /** Clases para la capa del portal (ej. z-[100]) para que el modal quede por encima de otros modales */
+  portalLayerClassName?: string;
 };
 
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   DialogContentProps
->(({ className, children, hideDefaultCloseButton = false, scrollContentOnly = false, ...props }, ref) => {
+>(({ className, children, hideDefaultCloseButton = false, scrollContentOnly = false, closeButtonClassName, closeButtonIconClassName, portalLayerClassName, ...props }, ref) => {
   const { isDarkMode } = useDemoDates();
   
-  return (
-    <DialogPortal>
+  const content = (
+    <>
       <DialogOverlay />
       <DialogPrimitive.Content
         ref={ref}
+        onOpenAutoFocus={(e) => {
+          e.preventDefault();
+        }}
         className={cn(
-          "fixed left-[50%] top-[50%] z-50 flex flex-col w-[calc(100%-2rem)] max-w-lg max-h-[95dvh] translate-x-[-50%] translate-y-[-50%]",
+          "fixed left-[50%] top-[50%] z-50 flex flex-col w-[calc(100%-2rem)] max-w-lg max-h-[85dvh] translate-x-[-50%] translate-y-[-50%]",
           "md:max-h-[calc(100dvh-2rem)]",
           isDarkMode ? "bg-gray-900 border-gray-700 text-white" : "bg-white border-gray-200",
           "shadow-lg rounded-2xl overflow-hidden",
@@ -66,8 +75,12 @@ const DialogContent = React.forwardRef<
       >
         <div className="flex flex-col flex-1 min-h-0 overflow-hidden relative">
           {!hideDefaultCloseButton && (
-            <DialogPrimitive.Close className={`absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground z-20 ${isDarkMode ? 'text-white' : ''}`}>
-              <X className="h-4 w-4" />
+            <DialogPrimitive.Close className={cn(
+              "absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground z-20",
+              isDarkMode ? "text-white" : "",
+              closeButtonClassName
+            )}>
+              <X className={cn("h-4 w-4", closeButtonIconClassName)} />
               <span className="sr-only">Close</span>
             </DialogPrimitive.Close>
           )}
@@ -81,6 +94,16 @@ const DialogContent = React.forwardRef<
           </div>
         </div>
       </DialogPrimitive.Content>
+    </>
+  );
+
+  return (
+    <DialogPortal>
+      {portalLayerClassName ? (
+        <div className={portalLayerClassName}>{content}</div>
+      ) : (
+        content
+      )}
     </DialogPortal>
   );
 })

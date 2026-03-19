@@ -13,7 +13,7 @@ const buttonVariants = {
   primary: "bg-[#FF914E] hover:bg-[#ff8132] text-white border-transparent rounded-2xl",
   secondary: "bg-[#FFF4DC] hover:bg-[#FFEDC8] text-[#B95D1B] border border-[#FFCF6E] rounded-2xl",
   accent: "bg-[#FFCF6E] hover:bg-[#ffc24f] text-[#8A4A14] border-transparent rounded-2xl",
-  invitation: "bg-[#04724d] hover:bg-[#036340] text-white border-transparent rounded-2xl",
+  invitation: "bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white border-transparent rounded-2xl",
 }
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(

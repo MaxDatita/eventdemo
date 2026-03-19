@@ -1,17 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { photoWallConfig } from '@/config/photo-wall';
-import { getGoogleDriveService } from '@/lib/google-drive';
+import { getGoogleDriveService, isGoogleDriveConfigured } from '@/lib/google-drive';
 
 export async function POST(request: NextRequest) {
   try {
     // Verificar si Google Drive está configurado
-    const isGoogleDriveConfigured = !!(
-      process.env.GOOGLE_DRIVE_FOLDER_ID && 
-      process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL && 
-      process.env.GOOGLE_PRIVATE_KEY
-    );
-
-    if (!isGoogleDriveConfigured) {
+    if (!isGoogleDriveConfigured()) {
       return NextResponse.json({ 
         error: 'Google Drive no está configurado. Por favor, contacta al administrador.',
         code: 'DRIVE_NOT_CONFIGURED'
@@ -137,4 +131,3 @@ export async function POST(request: NextRequest) {
     }, { status: statusCode });
   }
 }
-

@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { google } from 'googleapis';
+import { getDriveApiClient, isGoogleDriveConfigured } from '@/lib/google-drive';
 
 // Proxy para servir videos de Google Drive usando la API con Service Account
 // Hace el archivo público temporalmente si es necesario para streaming
@@ -15,11 +15,8 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // Verificar que Google Drive está configurado
-    const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-    const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
-
-    if (!clientEmail || !privateKey) {
+    // Verificar que Google Drive está configurado (OAuth o Service Account)
+    if (!isGoogleDriveConfigured()) {
       return new Response(
         JSON.stringify({ error: 'Google Drive no está configurado' }), 
         { status: 500, headers: { 'content-type': 'application/json' } }
@@ -28,19 +25,7 @@ export async function GET(req: NextRequest) {
 
     console.log('Fetching video from Google Drive using API, fileId:', fileId);
 
-    // Usar la API de Google Drive con Service Account
-    const auth = new google.auth.GoogleAuth({
-      credentials: {
-        client_email: clientEmail,
-        private_key: privateKey,
-      },
-      scopes: [
-        'https://www.googleapis.com/auth/drive.readonly',
-        'https://www.googleapis.com/auth/drive',
-      ],
-    });
-
-    const drive = google.drive({ version: 'v3', auth });
+    const drive = getDriveApiClient();
 
     // Obtener información del archivo
     let fileInfo;
@@ -239,4 +224,3 @@ export async function GET(req: NextRequest) {
     );
   }
 }
-

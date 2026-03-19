@@ -64,7 +64,7 @@ export const StyledDialog = ({
         }}
       >
         <DialogHeader className="text-center">
-          <DialogTitle className={`text-base text-center font-semibold ${isDarkMode ? 'text-white' : 'text-[#04724d]'}`}>{title}</DialogTitle>
+          <DialogTitle className={`text-base text-center font-semibold ${isDarkMode ? 'text-white' : 'text-[var(--color-primary)]'}`}>{title}</DialogTitle>
         </DialogHeader>
         <div className="py-4 flex-1 min-h-0 overflow-y-auto">
           {children}

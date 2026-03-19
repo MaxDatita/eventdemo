@@ -1,0 +1,39 @@
+[
+  {
+    "nombre": "Lucia",
+    "mensaje": "Felicitaciones! Que tengan una noche hermosa.",
+    "expected": {
+      "decision": "approved",
+      "score": 0.02,
+      "reason": "Mensaje positivo sin contenido riesgoso"
+    }
+  },
+  {
+    "nombre": "Anonimo",
+    "mensaje": "Sos un idiota, ojalá te pase algo malo.",
+    "expected": {
+      "decision": "rejected",
+      "score": 0.91,
+      "reason": "Insulto y expresión de daño"
+    }
+  },
+  {
+    "nombre": "Pablo",
+    "mensaje": "Nos vemos en la pista, traigan buena onda!",
+    "expected": {
+      "decision": "approved",
+      "score": 0.04,
+      "reason": "Invitación social amistosa"
+    }
+  },
+  {
+    "nombre": "User",
+    "mensaje": "Te voy a reventar cuando te vea.",
+    "expected": {
+      "decision": "rejected",
+      "score": 0.97,
+      "reason": "Amenaza violenta explícita"
+    }
+  }
+]
+

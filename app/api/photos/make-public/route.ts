@@ -1,16 +1,10 @@
 import { NextResponse } from 'next/server';
-import { getGoogleDriveService } from '@/lib/google-drive';
+import { getGoogleDriveService, isGoogleDriveConfigured } from '@/lib/google-drive';
 
 export async function POST() {
   try {
     // Verificar si Google Drive está configurado
-    const isGoogleDriveConfigured = !!(
-      process.env.GOOGLE_DRIVE_FOLDER_ID && 
-      process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL && 
-      process.env.GOOGLE_PRIVATE_KEY
-    );
-
-    if (!isGoogleDriveConfigured) {
+    if (!isGoogleDriveConfigured()) {
       return NextResponse.json({ 
         error: 'Google Drive no está configurado' 
       }, { status: 400 });
@@ -39,5 +33,4 @@ export async function POST() {
     }, { status: 500 });
   }
 }
-
 

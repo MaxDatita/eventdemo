@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Settings, Play, RotateCcw, Moon, Sun, Shield, LayoutDashboard, MessageSquare, Ticket, Users } from 'lucide-react'
+import { Settings, Play, RotateCcw, Moon, Sun, Shield, LayoutDashboard, MessageSquare, Ticket, Users, MonitorPlay } from 'lucide-react'
 import { useDemoDates } from '@/contexts/DemoContext'
 import { toast } from 'sonner'
 import { demoFeatures } from '@/config/feature-flags'
@@ -78,8 +78,8 @@ export function DemoControlPanel() {
 
   const handleNavigateToDashboard = () => {
     const url = isDemoMode
-      ? '/dashboard?demo=true&password=admin123'
-      : '/dashboard'
+      ? '/invitados?demo=true&password=admin123'
+      : '/invitados'
     window.open(url, '_blank')
     togglePanel()
   }
@@ -87,6 +87,14 @@ export function DemoControlPanel() {
   const handleNavigateToMessages = () => {
     const messagesPath = demoFeatures.tickets && rsvpMode === 'tickets' ? '/mensajes' : '/mensajesevent'
     window.open(messagesPath, '_blank')
+    togglePanel()
+  }
+
+  const handleNavigateToProjection = () => {
+    const url = isDemoMode
+      ? '/proyeccion?demo=true&password=admin123'
+      : '/proyeccion'
+    window.open(url, '_blank')
     togglePanel()
   }
 
@@ -170,15 +178,30 @@ export function DemoControlPanel() {
                     className="w-full flex items-center justify-center bg-[#FFCF6E] hover:bg-[#F5C55E] text-black"
                   >
                     <LayoutDashboard className="mr-2 h-4 w-4" />
-                    Dashboard del Evento
+                    Panel de Invitados
                   </Button>
+                </div>
+              </div>
 
+              <div className="border-t border-gray-300 dark:border-gray-700 pt-3 mt-2">
+                <h3 className={`text-sm font-semibold mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  Vista en Pantalla
+                </h3>
+                <div className="flex flex-col gap-2">
                   <Button
                     onClick={handleNavigateToMessages}
                     className="w-full flex items-center justify-center bg-[#FFCF6E] hover:bg-[#F5C55E] text-black"
                   >
                     <MessageSquare className="mr-2 h-4 w-4" />
                     Mensajes
+                  </Button>
+
+                  <Button
+                    onClick={handleNavigateToProjection}
+                    className="w-full flex items-center justify-center bg-[#FFCF6E] hover:bg-[#F5C55E] text-black"
+                  >
+                    <MonitorPlay className="mr-2 h-4 w-4" />
+                    Vista de Fotos
                   </Button>
                 </div>
               </div>

@@ -3,8 +3,44 @@ import { theme } from '@/config/theme';
 import { AuroraBackground } from '@/components/ui/aurora-background';
 import { BokehBackground } from '@/components/ui/bokeh';
 import SmokeyBackground from '@/components/ui/SmokeyBackground';
+import Grainient from '@/components/Grainient';
 
 export function BackgroundLayer() {
+  if ((theme.background as any).mode === 'grainient') {
+    const g = (theme.background as any).grainient ?? {};
+
+    return (
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <div className="w-full h-full relative">
+          <Grainient
+            color1={g.color1 ?? '#04724d'}
+            color2={g.color2 ?? '#bbb6cd'}
+            color3={g.color3 ?? '#aebaa6'}
+            timeSpeed={g.timeSpeed ?? 0.25}
+            colorBalance={g.colorBalance ?? -0.44}
+            warpStrength={g.warpStrength ?? 1.45}
+            warpFrequency={g.warpFrequency ?? 3.3}
+            warpSpeed={g.warpSpeed ?? 3.4}
+            warpAmplitude={g.warpAmplitude ?? 57}
+            blendAngle={g.blendAngle ?? 0}
+            blendSoftness={g.blendSoftness ?? 0.05}
+            rotationAmount={g.rotationAmount ?? 630}
+            noiseScale={g.noiseScale ?? 2}
+            grainAmount={g.grainAmount ?? 0.03}
+            grainScale={g.grainScale ?? 2}
+            grainAnimated={g.grainAnimated ?? false}
+            contrast={g.contrast ?? 1.5}
+            gamma={g.gamma ?? 1}
+            saturation={g.saturation ?? 1}
+            centerX={g.centerX ?? 0}
+            centerY={g.centerY ?? 0}
+            zoom={g.zoom ?? 0.9}
+          />
+        </div>
+      </div>
+    );
+  }
+
   if (theme.background.mode === 'gradient') {
     const gradient = theme.background.gradient;
     return (

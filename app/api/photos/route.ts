@@ -1,7 +1,13 @@
 import { NextResponse } from 'next/server';
 import { demoPhotos } from '@/data/demo-photos';
 import { photoWallConfig } from '@/config/photo-wall';
-import { getGoogleDriveService, getDirectImageUrl, getThumbnailUrl } from '@/lib/google-drive';
+import {
+  getGoogleDriveService,
+  getGoogleDriveServiceForFolder,
+  getDirectImageUrl,
+  getThumbnailUrl,
+  isGoogleDriveConfigured,
+} from '@/lib/google-drive';
 
 export async function GET(request: Request) {
   try {
@@ -9,23 +15,34 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const useApprovedParam = searchParams.get('useApproved');
     const useApproved = useApprovedParam === 'true';
+    const source = searchParams.get('source') || 'guest'; // guest | official
+    const phase = searchParams.get('phase') || (useApproved ? 'live' : 'preview'); // preview | live
 
     // Verificar si Google Drive está configurado
-    const isGoogleDriveConfigured = !!(
-      process.env.GOOGLE_DRIVE_FOLDER_ID && 
-      process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL && 
-      process.env.GOOGLE_PRIVATE_KEY
-    );
-
-    if (!isGoogleDriveConfigured) {
+    if (!isGoogleDriveConfigured()) {
       console.warn('Google Drive no está configurado. Usando datos demo.');
       const approvedPhotos = demoPhotos.filter(photo => photo.approved);
       return NextResponse.json({ photos: approvedPhotos });
     }
 
     // Obtener instancia de Google Drive Service
-    const googleDriveService = getGoogleDriveService();
+    const officialPreviewFolderId = process.env.OFFICIAL_PREVIEW_GOOGLE_DRIVE_FOLDER_ID;
+    const officialLiveFolderId =
+      process.env.OFFICIAL_LIVE_GOOGLE_DRIVE_FOLDER_ID || officialPreviewFolderId;
+    const selectedOfficialFolderId = phase === 'live' ? officialLiveFolderId : officialPreviewFolderId;
+
+    if (source === 'official' && !selectedOfficialFolderId) {
+      return NextResponse.json({ photos: [], error: 'Falta OFFICIAL_PREVIEW_GOOGLE_DRIVE_FOLDER_ID' }, { status: 400 });
+    }
+
+    const googleDriveService =
+      source === 'official' && selectedOfficialFolderId
+        ? getGoogleDriveServiceForFolder(selectedOfficialFolderId)
+        : getGoogleDriveService();
     if (!googleDriveService) {
+      if (source === 'official') {
+        return NextResponse.json({ photos: [], error: 'Google Drive oficial no está configurado correctamente' }, { status: 500 });
+      }
       console.warn('Google Drive no está configurado. Usando datos demo.');
       const approvedPhotos = demoPhotos.filter(photo => photo.approved);
       return NextResponse.json({ photos: approvedPhotos });
@@ -34,6 +51,9 @@ export async function GET(request: Request) {
     // Verificar que la carpeta existe
     const folderExists = await googleDriveService.verifyFolder();
     if (!folderExists) {
+      if (source === 'official') {
+        return NextResponse.json({ photos: [], error: 'La carpeta oficial no existe o no es accesible' }, { status: 404 });
+      }
       console.warn('La carpeta de Google Drive no existe o no es accesible. Usando datos demo.');
       const approvedPhotos = demoPhotos.filter(photo => photo.approved);
       return NextResponse.json({ photos: approvedPhotos });
@@ -42,9 +62,12 @@ export async function GET(request: Request) {
     // Obtener fotos según el parámetro recibido
     // Si useApproved es true, usar carpeta "aprobadas"
     // Si es false, usar carpeta "previa"
-    const drivePhotos = useApproved
-      ? await googleDriveService.getApprovedPhotos()
-      : await googleDriveService.getPreviaPhotos();
+    const drivePhotos =
+      source === 'official'
+        ? await googleDriveService.getFolderMedia()
+        : (useApproved
+            ? await googleDriveService.getApprovedPhotos()
+            : await googleDriveService.getPreviaPhotos());
     
     // Convertir formato de Google Drive a formato de la app
     const photos = drivePhotos.map(drivePhoto => {
@@ -55,6 +78,7 @@ export async function GET(request: Request) {
       const mediaUrl = isVideo 
         ? `/api/photos/video?id=${drivePhoto.id}`
         : `/api/photos/image?id=${drivePhoto.id}`;
+      const isOfficialSource = source === 'official';
       
       return {
         id: drivePhoto.id,
@@ -66,7 +90,7 @@ export async function GET(request: Request) {
         // Para videos, usar el proxy de thumbnail específico; para imágenes, usar thumbnailLink o generar uno
         thumbnailUrl: isVideo 
           ? `/api/photos/thumbnail?id=${drivePhoto.id}` // Usar proxy específico para thumbnails de video
-          : (drivePhoto.thumbnailLink || getThumbnailUrl(drivePhoto.id, 'large')),
+          : (isOfficialSource ? `/api/photos/thumbnail?id=${drivePhoto.id}` : (drivePhoto.thumbnailLink || getThumbnailUrl(drivePhoto.id, 'large'))),
         fullUrl: mediaUrl, // Misma URL de alta calidad
         alternativeUrl: isVideo 
           ? (drivePhoto.webContentLink || `/api/photos/video?id=${drivePhoto.id}`) // Usar webContentLink si está disponible
@@ -79,7 +103,9 @@ export async function GET(request: Request) {
     });
 
     // Filtrar por aprobación si está en modo moderación
-    const approvedPhotos = photoWallConfig.requiresApproval 
+    const approvedPhotos = source === 'official'
+      ? photos
+      : photoWallConfig.requiresApproval 
       ? photos.filter(photo => photo.approved)
       : photos;
 
@@ -87,9 +113,16 @@ export async function GET(request: Request) {
 
   } catch (error) {
     console.error('Error fetching photos:', error);
+    const { searchParams } = new URL(request.url);
+    const source = searchParams.get('source') || 'guest';
+    if (source === 'official') {
+      return NextResponse.json(
+        { photos: [], error: error instanceof Error ? error.message : 'Error al obtener contenido oficial' },
+        { status: 500 }
+      );
+    }
     // En caso de error, retornar fotos demo
     const approvedPhotos = demoPhotos.filter(photo => photo.approved);
     return NextResponse.json({ photos: approvedPhotos });
   }
 }
-

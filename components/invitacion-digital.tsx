@@ -20,7 +20,7 @@ import { PhotoCameraModal } from "@/components/photo-camera-modal"
 import { PhotoWall } from "@/components/photo-wall"
 import GradientText from "@/components/GradientText"
 import { toast } from 'sonner'
-import { demoMessages, DemoMessage } from '@/data/demo-messages'
+import { demoMessages } from '@/data/demo-messages'
 import { useDemoDates } from '@/contexts/DemoContext'
 import { UserCheck } from 'lucide-react'
 
@@ -57,7 +57,7 @@ const InitialsCircle = ({ name }: { name: string }) => {
 
 interface MessageCardProps {
   message: {
-    id: number;
+    id: number | string;
     nombre: string;
     mensaje: string;
   };
@@ -94,7 +94,7 @@ interface ApiMessage {
 }
 
 interface CarouselMessage {
-  id: number;
+  id: number | string;
   nombre: string;
   mensaje: string;
 }
@@ -122,10 +122,12 @@ export function InvitacionDigitalComponent() {
   const [showRsvpModal, setShowRsvpModal] = useState(false);
   const [showPhotoCamera, setShowPhotoCamera] = useState(false);
   const [showPhotoWall, setShowPhotoWall] = useState(false);
+  const [photoWallSource, setPhotoWallSource] = useState<'guest' | 'official-preview' | 'official-live'>('guest');
   const [showContentModal, setShowContentModal] = useState(false);
   const [isRsvpActive, setIsRsvpActive] = useState(true);
   const [ticketAvailability, setTicketAvailability] = useState<{[key: string]: number}>({})
   const [isCheckingAvailability, setIsCheckingAvailability] = useState(true);
+  const [sheetMessages, setSheetMessages] = useState<CarouselMessage[]>([]);
 
   // DEMO: Usar fechas del hook de demo solo cuando se active el modo demo
   const { demoDates, isDemoMode, isCountdownActive, isEventLive, isDarkMode, rsvpMode } = useDemoDates();
@@ -142,10 +144,49 @@ export function InvitacionDigitalComponent() {
     return isDemoMode ? new Date(demoDates.liveEnd) : new Date(theme.dates.liveEnd);
   }, [demoDates.liveEnd, isDemoMode]);
 
+  const fetchSheetMessages = useCallback(async () => {
+    try {
+      const response = await fetch('/api/messages?page=1&pageSize=200');
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}`);
+      }
 
-  // DEMO: Usar mensajes ficticios en lugar de API
-  const carouselMessages = demoMessages;
-  const allMessages = demoMessages;
+      const data = await response.json();
+      const normalized: CarouselMessage[] = (data.messages || [])
+        .filter((msg: { nombre?: string; mensaje?: string }) => msg?.nombre && msg?.mensaje)
+        .map((msg: { id?: number; nombre: string; mensaje: string }, index: number) => ({
+          id: `sheet-${msg.id ?? index}`,
+          nombre: msg.nombre,
+          mensaje: msg.mensaje
+        }));
+
+      setSheetMessages(normalized);
+    } catch (error) {
+      console.error('Error al cargar mensajes de Google Sheet:', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchSheetMessages();
+
+    const intervalId = setInterval(() => {
+      fetchSheetMessages();
+    }, 60 * 1000);
+
+    return () => clearInterval(intervalId);
+  }, [fetchSheetMessages]);
+
+  const allMessages = useMemo<CarouselMessage[]>(() => {
+    const normalizedDemo = demoMessages.map((message) => ({
+      id: `demo-${message.id}`,
+      nombre: message.nombre,
+      mensaje: message.mensaje
+    }));
+
+    return [...normalizedDemo, ...sheetMessages];
+  }, [sheetMessages]);
+
+  const carouselMessages = allMessages;
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -234,7 +275,7 @@ export function InvitacionDigitalComponent() {
     ? heroGradientConfig?.afterCountdownEnds || 'El evento ya comenzo'
     : heroGradientConfig?.beforeCountdownEnds || 'Falta muy poco para el evento'
 
-  const handleMessageClick = useCallback((message: { id: number; nombre: string; mensaje: string }) => {
+  const handleMessageClick = useCallback((message: { id: number | string; nombre: string; mensaje: string }) => {
     setSelectedMessage({
       nombre: message.nombre,
       mensaje: message.mensaje
@@ -243,19 +284,38 @@ export function InvitacionDigitalComponent() {
 
   const handleSubmitMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.nombre || !newMessage.mensaje) return;
+    if (!newMessage.nombre.trim() || !newMessage.mensaje.trim()) return;
 
     setIsSubmitting(true);
     try {
-      // DEMO: Simular envío de mensaje
-      await new Promise(resolve => setTimeout(resolve, 1500)); // Simular delay de red
+      const payload = {
+        fecha: new Date().toISOString(),
+        nombre: newMessage.nombre.trim(),
+        mensaje: newMessage.mensaje.trim()
+      };
+
+      const response = await fetch('/api/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorPayload = await response.json().catch(() => ({}));
+        const detail = errorPayload?.error || `Error ${response.status}`;
+        throw new Error(detail);
+      }
       
       toast.success('¡Mensaje enviado!');
       setNewMessage({ nombre: '', mensaje: '' });
       setIsMessageDialogOpen(false);
+      await fetchSheetMessages();
     } catch (error) {
+      const message = error instanceof Error ? error.message : 'Error al enviar el mensaje';
       console.error('Error:', error);
-      toast.error('Error al enviar el mensaje');
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }
@@ -416,10 +476,10 @@ export function InvitacionDigitalComponent() {
                   <div className="relative">
                     <div ref={carouselRef} className="overflow-x-hidden whitespace-nowrap">
                       <div className="inline-flex gap-4" style={{ width: `${carouselMessages.length * 272 * 2}px` }}>
-                        {carouselMessages.map((message: DemoMessage) => (
+                        {carouselMessages.map((message: CarouselMessage) => (
                           <MessageCard key={message.id} message={message} onClick={() => handleMessageClick(message)} />
                         ))}
-                        {carouselMessages.map((message: DemoMessage) => (
+                        {carouselMessages.map((message: CarouselMessage) => (
                           <MessageCard key={`duplicate-${message.id}`} message={message} onClick={() => handleMessageClick(message)} />
                         ))}
                       </div>
@@ -450,6 +510,9 @@ export function InvitacionDigitalComponent() {
                   >
                     <MailPlus className="mr-2 h-4 w-4"/> Ver todos los mensajes
                   </Button>
+                  <p className={`text-center text-sm mt-2 ${isDarkMode ? 'text-gray-200' : 'text-gray-600'}`}>
+                    Total de mensajes: {allMessages.length}
+                  </p>
                 </>
               )}
             </div>
@@ -520,7 +583,12 @@ export function InvitacionDigitalComponent() {
                       <Button
                         variant="invitation"
                         className="w-full flex items-center justify-center gap-2 py-6"
-                        onClick={() => window.open(theme.resources.contentLink, "_blank")}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setPhotoWallSource('official-live');
+                          setShowContentModal(false);
+                          setShowPhotoWall(true);
+                        }}
                       >
                         <Film className="h-5 w-5" />
                         <span className="font-semibold">Contenido Oficial</span>
@@ -539,14 +607,16 @@ export function InvitacionDigitalComponent() {
                           className="w-full flex flex-col items-center justify-center gap-2 py-4 h-auto"
                           onClick={(e) => {
                             e.stopPropagation();
+                            setPhotoWallSource('guest');
+                            setShowContentModal(false);
                             setShowPhotoWall(true);
                           }}
                         >
                           <Users className="h-5 w-5" />
-                          <span className="text-sm font-medium">Galería de Invitados</span>
+                          <span className="text-sm font-medium">Galería</span>
                         </Button>
                         <p className="text-xs text-center opacity-70">
-                          Fotos compartidas por participantes
+                          Fotos de invitados
                         </p>
                       </div>
 
@@ -557,14 +627,15 @@ export function InvitacionDigitalComponent() {
                           className="w-full flex flex-col items-center justify-center gap-2 py-4 h-auto"
                           onClick={(e) => {
                             e.stopPropagation();
+                            setShowContentModal(false);
                             setShowPhotoCamera(true);
                           }}
                         >
                           <Camera className="h-5 w-5" />
-                          <span className="text-sm font-medium">Compartir mi Foto</span>
+                          <span className="text-sm font-medium">Compartir Foto</span>
                         </Button>
                         <p className="text-xs text-center opacity-70">
-                          Sube tu foto del evento
+                          Sube tu foto
                         </p>
                       </div>
                     </div>
@@ -579,11 +650,13 @@ export function InvitacionDigitalComponent() {
                       className="w-full flex items-center justify-center"
                       onClick={(e) => {
                         e.stopPropagation();
+                        setPhotoWallSource('official-preview');
+                        setShowContentModal(false);
                         setShowPhotoWall(true);
                       }}
                     >
                       <ImageIcon className="mr-2 h-4 w-4" />
-                      <span>Ver Fotos Previas</span>
+                      <span>Ver Contenido Oficial</span>
                     </Button>
                   </div>
                 )}
@@ -597,7 +670,7 @@ export function InvitacionDigitalComponent() {
               </DialogTrigger>
               <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader className="text-center">
-                  <DialogTitle className={`text-center font-semibold ${isDarkMode ? 'text-white' : 'text-[#04724d]'}`}>Deja un mensaje</DialogTitle>
+                  <DialogTitle className={`text-center font-semibold ${isDarkMode ? 'text-white' : 'text-[var(--color-primary)]'}`}>Deja un mensaje</DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmitMessage} className="grid gap-4 py-4">
                   {isContentActive ? (
@@ -819,6 +892,7 @@ export function InvitacionDigitalComponent() {
         
         <PhotoWall 
           isOpen={showPhotoWall} 
+          source={photoWallSource}
           onClose={() => {
             // Primero asegurar que el modal de contenido esté abierto
             setShowContentModal(true);

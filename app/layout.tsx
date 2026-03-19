@@ -14,23 +14,24 @@ export const viewport: Viewport = {
   userScalable: false,
   viewportFit: 'cover',
   themeColor: '#471069',
+  interactiveWidget: 'resizes-content',
 }
 
 export const metadata: Metadata = {
   metadataBase: process.env.NEXT_PUBLIC_BASE_URL 
     ? new URL(process.env.NEXT_PUBLIC_BASE_URL)
     : new URL('https://eventdemo.vercel.app'),
-  title: "Eventest - Invitación Digital",
+  title: "Lau&Santi - Invitación Digital",
   description: "Te invitamos a compartir una noche inolvidable",
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
   },
   openGraph: {
-    title: "Eventest - Invitación Digital",
+    title: "Lau&Santi - Invitación Digital",
     description: "Te invitamos a compartir una noche inolvidable",
     url: "https://invitacion-v2.eventechy.com/",
-    siteName: "Eventest",
+    siteName: "Lau&Santi",
     images: [
       {
         url: "/banner.webp",
@@ -67,12 +68,29 @@ export default function RootLayout({
 }) {
   const backgroundMode = theme.background?.mode || 'gradient'
   const auroraBaseColor = theme.background?.aurora?.baseColor || '#07070c'
+  const { primary, primaryHover } = theme.colors || {}
+  // RGB del primary para gradientes con opacidad en CSS (ej. rgba(var(--color-primary-rgb), 0.25))
+  const primaryRgb =
+    typeof primary === 'string' && primary.startsWith('#')
+      ? [
+          parseInt(primary.slice(1, 3), 16),
+          parseInt(primary.slice(3, 5), 16),
+          parseInt(primary.slice(5, 7), 16),
+        ].join(', ')
+      : '4, 114, 77'
 
   return (
     <html
       lang="es"
       className={`theme-bg-${backgroundMode}`}
-      style={{ '--aurora-base-color': auroraBaseColor } as CSSProperties}
+      style={
+        {
+          '--aurora-base-color': auroraBaseColor,
+          '--color-primary': primary ?? '#04724d',
+          '--color-primary-hover': primaryHover ?? '#036340',
+          '--color-primary-rgb': primaryRgb,
+        } as CSSProperties
+      }
     >
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />

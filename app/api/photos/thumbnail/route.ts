@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
-import { google } from 'googleapis';
+import { getDriveApiClient, isGoogleDriveConfigured } from '@/lib/google-drive';
 
-// Proxy para servir thumbnails de videos de Google Drive usando la API
+// Proxy para servir thumbnails de imagenes y videos desde Google Drive.
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -14,62 +14,23 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // Verificar que Google Drive está configurado
-    const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-    const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
-
-    if (!clientEmail || !privateKey) {
+    if (!isGoogleDriveConfigured()) {
       return new Response(
-        JSON.stringify({ error: 'Google Drive no está configurado' }), 
+        JSON.stringify({ error: 'Google Drive no está configurado' }),
         { status: 500, headers: { 'content-type': 'application/json' } }
       );
     }
 
-    // Usar la API de Google Drive con Service Account para obtener el thumbnail
-    const auth = new google.auth.GoogleAuth({
-      credentials: {
-        client_email: clientEmail,
-        private_key: privateKey,
-      },
-      scopes: ['https://www.googleapis.com/auth/drive.readonly'],
+    const drive = getDriveApiClient();
+    const fileMeta = await drive.files.get({
+      fileId,
+      fields: 'thumbnailLink,mimeType',
+      supportsAllDrives: true,
     });
 
-    const drive = google.drive({ version: 'v3', auth });
+    const thumbnailUrl =
+      fileMeta.data.thumbnailLink || `https://drive.google.com/thumbnail?id=${fileId}&sz=w800-h600`;
 
-    // Obtener thumbnail del video usando la API
-    // Google Drive genera thumbnails automáticamente para videos
-    const response = await drive.files.get(
-      {
-        fileId: fileId,
-        fields: 'thumbnailLink',
-        supportsAllDrives: true,
-      }
-    );
-
-    // Si hay thumbnailLink, usarlo directamente
-    if (response.data.thumbnailLink) {
-      const thumbnailResponse = await fetch(response.data.thumbnailLink, {
-        headers: {
-          'user-agent': 'NextJS-Thumbnail-Proxy',
-        },
-        credentials: 'omit',
-      });
-
-      if (thumbnailResponse.ok && thumbnailResponse.body) {
-        const contentType = thumbnailResponse.headers.get('content-type') || 'image/jpeg';
-        return new Response(thumbnailResponse.body, {
-          status: 200,
-          headers: {
-            'content-type': contentType,
-            'cache-control': 'public, max-age=3600, must-revalidate',
-            'access-control-allow-origin': '*',
-          },
-        });
-      }
-    }
-
-    // Si no hay thumbnailLink, intentar generar uno usando la URL de thumbnail de Google Drive
-    const thumbnailUrl = `https://drive.google.com/thumbnail?id=${fileId}&sz=w800-h600`;
     const thumbnailResponse = await fetch(thumbnailUrl, {
       headers: {
         'user-agent': 'NextJS-Thumbnail-Proxy',
@@ -85,22 +46,20 @@ export async function GET(req: NextRequest) {
         status: 200,
         headers: {
           'content-type': contentType,
-          'cache-control': 'public, max-age=3600, must-revalidate',
+          'cache-control': 'public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400',
           'access-control-allow-origin': '*',
         },
       });
     }
 
-    // Si todo falla, retornar error
-    return new Response('No se pudo obtener el thumbnail del video', { status: 502 });
-
+    return new Response('No se pudo obtener el thumbnail del archivo', { status: 502 });
   } catch (error) {
     console.error('Error en el proxy de thumbnail:', error);
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         error: 'Error interno del servidor al obtener el thumbnail',
-        details: error instanceof Error ? error.message : String(error)
-      }), 
+        details: error instanceof Error ? error.message : String(error),
+      }),
       {
         status: 500,
         headers: { 'content-type': 'application/json' },
@@ -108,8 +67,6 @@ export async function GET(req: NextRequest) {
     );
   }
 }
-
-
 
 
 

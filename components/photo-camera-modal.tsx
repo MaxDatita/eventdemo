@@ -1,38 +1,42 @@
 'use client'
 
-import { useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { useDemoDates } from '@/contexts/DemoContext';
-import { Camera, Upload, X, Type, Smile, Check } from 'lucide-react';
+import { Camera, Upload, X, Check, RotateCcw } from 'lucide-react';
 
 interface PhotoCameraModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-type CameraStep = 'camera' | 'edit' | 'preview' | 'uploading' | 'success';
+type CameraStep = 'camera' | 'preview' | 'details' | 'uploading' | 'success';
 
 export function PhotoCameraModal({ isOpen, onClose }: PhotoCameraModalProps) {
   const { isDarkMode } = useDemoDates();
-  const fileInputRef = useRef<HTMLInputElement>(null); // Input nativo con capture para abrir cámara
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const dialogContentRef = useRef<HTMLDivElement>(null);
   
   const [step, setStep] = useState<CameraStep>('camera');
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [username, setUsername] = useState('');
   const [textOverlay, setTextOverlay] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+  const [keyboardViewport, setKeyboardViewport] = useState({
+    height: 0,
+    offsetTop: 0,
+    isOpen: false,
+  });
+  const isDetailsStep = step === 'details';
 
-
-  // Manejar selección de archivo (fallback para mobile)
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onloadend = () => {
       const dataUrl = reader.result as string;
-      // Intentar convertir a JPEG para evitar HEIC/HEIF incompatibles
       const img = new Image();
       img.onload = () => {
         try {
@@ -44,20 +48,19 @@ export function PhotoCameraModal({ isOpen, onClose }: PhotoCameraModalProps) {
             ctx.drawImage(img, 0, 0);
             const jpegDataUrl = canvas.toDataURL('image/jpeg', 0.9);
             setCapturedImage(jpegDataUrl);
-            setStep('edit');
+            setStep('preview');
           } else {
-            // Fallback: usar el dataUrl original
             setCapturedImage(dataUrl);
-            setStep('edit');
+            setStep('preview');
           }
-        } catch (e) {
+        } catch {
           setCapturedImage(dataUrl);
-          setStep('edit');
+          setStep('preview');
         }
       };
       img.onerror = () => {
         setCapturedImage(dataUrl);
-        setStep('edit');
+        setStep('preview');
       };
       img.src = dataUrl;
     };
@@ -65,7 +68,15 @@ export function PhotoCameraModal({ isOpen, onClose }: PhotoCameraModalProps) {
   };
 
   const openCameraPicker = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
     fileInputRef.current?.click();
+  };
+
+  const handleRetake = () => {
+    setCapturedImage(null);
+    openCameraPicker();
   };
 
   const handleUpload = async () => {
@@ -75,25 +86,20 @@ export function PhotoCameraModal({ isOpen, onClose }: PhotoCameraModalProps) {
     setStep('uploading');
 
     try {
-      // Convertir base64 a blob
       let blob: Blob;
       
       if (capturedImage.startsWith('data:')) {
-        // Es un data URL (base64)
         const response = await fetch(capturedImage);
         blob = await response.blob();
       } else {
-        // Ya es un blob o URL
         const response = await fetch(capturedImage);
         blob = await response.blob();
       }
       
-      // Crear FormData
       const formData = new FormData();
       formData.append('photo', blob, 'photo.jpg');
       formData.append('username', username);
 
-      // Subir foto
       const uploadResponse = await fetch('/api/photos/upload', {
         method: 'POST',
         body: formData,
@@ -118,7 +124,7 @@ export function PhotoCameraModal({ isOpen, onClose }: PhotoCameraModalProps) {
       console.error('Error uploading photo:', error);
       const errorMessage = error instanceof Error ? error.message : 'Error al subir la foto. Inténtalo de nuevo.';
       alert(`Error: ${errorMessage}`);
-      setStep('preview');
+      setStep('details');
     } finally {
       setIsUploading(false);
     }
@@ -133,25 +139,101 @@ export function PhotoCameraModal({ isOpen, onClose }: PhotoCameraModalProps) {
     onClose();
   };
 
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const container = dialogContentRef.current;
+    if (!container) return;
+
+    const onFocusIn = (event: Event) => {
+      const target = event.target as HTMLElement | null;
+      if (!target) return;
+
+      const isTextField = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA';
+      if (!isTextField) return;
+
+      setTimeout(() => {
+        const findScrollableParent = (node: HTMLElement | null): HTMLElement | null => {
+          let parent = node?.parentElement ?? null;
+          while (parent) {
+            const styles = window.getComputedStyle(parent);
+            if (/(auto|scroll)/.test(styles.overflowY)) return parent;
+            parent = parent.parentElement;
+          }
+          return null;
+        };
+
+        const scrollParent = findScrollableParent(target);
+        if (scrollParent) {
+          const targetTop =
+            target.getBoundingClientRect().top -
+            scrollParent.getBoundingClientRect().top +
+            scrollParent.scrollTop -
+            20;
+          scrollParent.scrollTo({ top: Math.max(0, targetTop), behavior: 'smooth' });
+          return;
+        }
+
+        target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      }, 100);
+    };
+
+    container.addEventListener('focusin', onFocusIn);
+    return () => container.removeEventListener('focusin', onFocusIn);
+  }, [isOpen, step]);
+
+  useEffect(() => {
+    if (!isOpen || !isDetailsStep || typeof window === 'undefined' || !window.visualViewport) {
+      setKeyboardViewport({ height: 0, offsetTop: 0, isOpen: false });
+      return;
+    }
+
+    const viewport = window.visualViewport;
+
+    const updateKeyboardState = () => {
+      const keyboardHeight = Math.max(0, window.innerHeight - (viewport.height + viewport.offsetTop));
+      setKeyboardViewport({
+        height: viewport.height,
+        offsetTop: viewport.offsetTop,
+        isOpen: keyboardHeight > 80,
+      });
+    };
+
+    updateKeyboardState();
+    viewport.addEventListener('resize', updateKeyboardState);
+    viewport.addEventListener('scroll', updateKeyboardState);
+
+    return () => {
+      viewport.removeEventListener('resize', updateKeyboardState);
+      viewport.removeEventListener('scroll', updateKeyboardState);
+      setKeyboardViewport({ height: 0, offsetTop: 0, isOpen: false });
+    };
+  }, [isOpen, isDetailsStep]);
+
+  const keyboardAwareStyle =
+    isDetailsStep && keyboardViewport.isOpen
+      ? {
+          top: `${Math.max(8, keyboardViewport.offsetTop + 8)}px`,
+          transform: 'translateX(-50%)',
+          maxHeight: `${Math.max(280, keyboardViewport.height - 16)}px`,
+          height: `${Math.max(280, keyboardViewport.height - 16)}px`,
+        }
+      : undefined;
 
   const renderContent = () => {
     switch (step) {
       case 'camera':
         return (
           <div className="space-y-4">
-
-            {/* Siempre mostrar ícono de cámara */}
             <div className={`text-center py-8 space-y-4 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
               <Camera className="h-16 w-16 mx-auto opacity-50" />
             </div>
             
-            {/* Advertencia sobre contenido */}
-            <div className={`p-3 rounded-2xl text-sm ${isDarkMode ? 'bg-yellow-900/30 border border-yellow-700 text-yellow-200' : 'bg-yellow-50 border border-yellow-200 text-yellow-800'}`}>
+            <div className={`p-3 rounded-2xl text-sm ${isDarkMode ? 'bg-[var(--color-primary)]/20 border border-[var(--color-primary)]/50 text-green-200' : 'bg-[var(--color-primary)]/10 border border-[var(--color-primary)]/30 text-[var(--color-primary)]'}`}>
               <p className="font-semibold mb-1">⚠️ Aviso importante:</p>
               <p>Por favor, no subas contenido indebido, ofensivo o que viole los términos de servicio. Las fotos pueden ser moderadas y removidas si no cumplen con las políticas del evento.</p>
             </div>
 
-            {/* Input oculto para abrir SÓLO la cámara nativa */}
             <input
               ref={fileInputRef}
               type="file"
@@ -161,9 +243,6 @@ export function PhotoCameraModal({ isOpen, onClose }: PhotoCameraModalProps) {
               className="hidden"
             />
             
-            
-            
-            {/* Botón siempre visible para abrir cámara nativa */}
             <Button 
               variant="invitation"
               onClick={openCameraPicker}
@@ -175,26 +254,68 @@ export function PhotoCameraModal({ isOpen, onClose }: PhotoCameraModalProps) {
           </div>
         );
 
-      case 'edit':
+      case 'preview':
         return (
           <div className="space-y-4">
             <div className="relative">
               <img 
                 src={capturedImage!} 
-                alt="Captured" 
-                className="w-full max-w-md mx-auto rounded-lg"
+                alt="Preview" 
+                className="w-full max-w-md mx-auto rounded-2xl overflow-hidden"
               />
-              {textOverlay && (
-                <div className="absolute top-4 left-4 bg-black/70 text-white px-2 py-1 rounded text-sm">
-                  {textOverlay}
-                </div>
-              )}
+            </div>
+            
+            <p className={`text-center text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+              ¿Te gusta cómo quedó la foto?
+            </p>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+
+            <div className="flex gap-2">
+              <Button 
+                className={`flex-1 rounded-2xl flex items-center justify-center gap-2 ${isDarkMode ? 'bg-[var(--color-primary)]/20 hover:bg-[var(--color-primary)]/30 text-white border border-[var(--color-primary)]/40' : 'bg-[var(--color-primary)]/10 hover:bg-[var(--color-primary)]/20 text-[var(--color-primary)] border border-[var(--color-primary)]/40'}`}
+                onClick={handleRetake}
+              >
+                <RotateCcw className="h-4 w-4" />
+                <span>Volver a sacar</span>
+              </Button>
+              <Button 
+                variant="invitation"
+                onClick={() => setStep('details')} 
+                className="flex-1 rounded-2xl flex items-center justify-center gap-2"
+              >
+                <Check className="h-4 w-4" />
+                <span>Continuar</span>
+              </Button>
+            </div>
+          </div>
+        );
+
+      case 'details':
+        return (
+          <div className="dialog-scroll-content space-y-4 pb-2">
+            <div className="flex items-center gap-3">
+              <img 
+                src={capturedImage!} 
+                alt="Thumbnail" 
+                className="w-20 h-20 object-cover rounded-xl flex-shrink-0"
+              />
+              <div className={`flex-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                <p className="text-sm">Completa los datos para compartir tu foto</p>
+              </div>
             </div>
             
             <div className="space-y-3">
               <div>
                 <label className={`text-sm font-medium ${isDarkMode ? 'text-white' : ''}`}>
-                  Tu nombre
+                  Tu nombre *
                 </label>
                 <Input
                   value={username}
@@ -208,78 +329,28 @@ export function PhotoCameraModal({ isOpen, onClose }: PhotoCameraModalProps) {
                 <label className={`text-sm font-medium ${isDarkMode ? 'text-white' : ''}`}>
                   Agregar texto (opcional)
                 </label>
-                <div className="flex gap-2">
-                  <Input
-                    value={textOverlay}
-                    onChange={(e) => setTextOverlay(e.target.value)}
-                    placeholder="Escribe algo..."
-                    className={isDarkMode ? 'bg-gray-800 text-white border-gray-600' : ''}
-                  />
-                  <Button variant="secondary" className="rounded-lg">
-                    <Type className="h-4 w-4" />
-                  </Button>
-                  <Button variant="secondary" className="rounded-lg">
-                    <Smile className="h-4 w-4" />
-                  </Button>
-                </div>
+                <Input
+                  value={textOverlay}
+                  onChange={(e) => setTextOverlay(e.target.value)}
+                  placeholder="Escribe algo..."
+                  className={isDarkMode ? 'bg-gray-800 text-white border-gray-600' : ''}
+                />
               </div>
             </div>
 
             <div className="flex gap-2">
               <Button 
-                variant="secondary" 
-                onClick={() => setStep('camera')}
-                className="flex-1 rounded-lg flex items-center justify-center gap-2"
+                className={`flex-1 rounded-2xl flex items-center justify-center gap-2 ${isDarkMode ? 'bg-[var(--color-primary)]/20 hover:bg-[var(--color-primary)]/30 text-white border border-[var(--color-primary)]/40' : 'bg-[var(--color-primary)]/10 hover:bg-[var(--color-primary)]/20 text-[var(--color-primary)] border border-[var(--color-primary)]/40'}`}
+                onClick={() => setStep('preview')}
               >
                 <X className="h-4 w-4" />
                 <span>Volver</span>
               </Button>
               <Button 
                 variant="invitation"
-                onClick={() => setStep('preview')} 
-                className="flex-1 rounded-lg flex items-center justify-center gap-2"
-              >
-                <Check className="h-4 w-4" />
-                <span>Continuar</span>
-              </Button>
-            </div>
-          </div>
-        );
-
-      case 'preview':
-        return (
-          <div className="space-y-4">
-            <div className="relative">
-              <img 
-                src={capturedImage!} 
-                alt="Preview" 
-                className="w-full max-w-md mx-auto rounded-lg"
-              />
-              {textOverlay && (
-                <div className="absolute top-4 left-4 bg-black/70 text-white px-2 py-1 rounded text-sm">
-                  {textOverlay}
-                </div>
-              )}
-            </div>
-            
-            <div className={`text-center ${isDarkMode ? 'text-white' : ''}`}>
-              <p className="font-semibold">@{username}</p>
-              <p className="text-sm opacity-70">¿Listo para compartir?</p>
-            </div>
-
-            <div className="flex gap-2">
-              <Button 
-                variant="secondary" 
-                onClick={() => setStep('edit')} 
-                className="flex-1 rounded-lg flex items-center justify-center gap-2"
-              >
-                <X className="h-4 w-4" />
-                <span>Editar</span>
-              </Button>
-              <Button 
-                variant="invitation"
-                onClick={handleUpload} 
-                className="flex-1 rounded-lg flex items-center justify-center gap-2"
+                onClick={handleUpload}
+                disabled={!username.trim()}
+                className="flex-1 rounded-2xl flex items-center justify-center gap-2"
               >
                 <Upload className="h-4 w-4" />
                 <span>Compartir</span>
@@ -290,16 +361,16 @@ export function PhotoCameraModal({ isOpen, onClose }: PhotoCameraModalProps) {
 
       case 'uploading':
         return (
-          <div className="text-center space-y-4">
-            <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <div className="text-center space-y-4 py-8">
+            <div className="w-8 h-8 border-4 border-[var(--color-primary)] border-t-transparent rounded-full animate-spin mx-auto"></div>
             <p className={`${isDarkMode ? 'text-white' : ''}`}>Subiendo foto...</p>
           </div>
         );
 
       case 'success':
         return (
-          <div className="text-center space-y-4">
-            <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto">
+          <div className="text-center space-y-4 py-8">
+            <div className="w-16 h-16 bg-[var(--color-primary)] rounded-full flex items-center justify-center mx-auto">
               <Check className="h-8 w-8 text-white" />
             </div>
             <p className={`${isDarkMode ? 'text-white' : ''}`}>¡Foto compartida exitosamente!</p>
@@ -315,14 +386,15 @@ export function PhotoCameraModal({ isOpen, onClose }: PhotoCameraModalProps) {
     <Dialog 
       open={isOpen} 
       onOpenChange={(open) => {
-        // Solo cerrar si realmente se está cerrando y estaba abierto
         if (!open && isOpen) {
           handleClose();
         }
       }} 
-      modal={false}
+      modal={true}
     >
       <DialogContent 
+        ref={dialogContentRef}
+        portalLayerClassName="z-[100]"
         onInteractOutside={(e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -336,14 +408,15 @@ export function PhotoCameraModal({ isOpen, onClose }: PhotoCameraModalProps) {
           e.preventDefault();
           e.stopPropagation();
         }}
-        className={`max-w-md ${isDarkMode ? 'dark bg-gray-900 text-white border-gray-700' : 'bg-white'}`}
+        style={keyboardAwareStyle}
+        className={`max-w-md max-h-[90dvh] ${step === 'details' ? 'keyboard-aware' : ''} ${isDarkMode ? 'dark bg-gray-900 text-white border-gray-700' : 'bg-white'}`}
       >
         <DialogHeader>
           <DialogTitle className={`flex items-center gap-2 ${isDarkMode ? 'text-white' : ''}`}>
             <Camera className="h-5 w-5" />
             {step === 'camera' && 'Tomar Foto'}
-            {step === 'edit' && 'Editar Foto'}
             {step === 'preview' && 'Vista Previa'}
+            {step === 'details' && 'Completar Datos'}
             {step === 'uploading' && 'Subiendo...'}
             {step === 'success' && '¡Éxito!'}
           </DialogTitle>
@@ -354,4 +427,3 @@ export function PhotoCameraModal({ isOpen, onClose }: PhotoCameraModalProps) {
     </Dialog>
   );
 }
-

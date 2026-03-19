@@ -3,8 +3,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import Image from 'next/image'
 import { theme } from '@/config/theme'
+import { isBackgroundDark } from '@/config/theme'
 import { Maximize, Minimize } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import GradientText from '@/components/GradientText'
 
 interface Photo {
   id: string
@@ -48,6 +50,9 @@ export default function ProyeccionPage() {
   const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set())
   const [batchKey, setBatchKey] = useState(0) // Key para forzar reinicio de animación
   const [isFullscreen, setIsFullscreen] = useState(false)
+
+  // Detección de fondo para alternar versión clara/oscura de UI (como en moderación)
+  const isDark = isBackgroundDark()
 
   // Función para obtener fotos aprobadas
   const fetchPhotos = useCallback(async () => {
@@ -309,11 +314,22 @@ export default function ProyeccionPage() {
   return (
     <>
       <div className="bg-gradient-animation" />
-      <div className="content-container min-h-screen flex flex-col p-8 relative">
+      <div className="content-container h-screen min-h-0 flex flex-col p-8 relative overflow-hidden">
+        {/* Badge MODO DEMO - Arriba, todo el ancho */}
+        <div className="flex-shrink-0 w-full">
+          <div className="demo-badge-center-bottom relative w-full">
+            <span className="text-xs font-bold">MODO DEMO</span>
+          </div>
+        </div>
+
         {/* Botón de pantalla completa - Esquina superior derecha */}
         <Button
           onClick={toggleFullscreen}
-          className="fixed top-4 right-4 z-50 bg-white/10 hover:bg-white/20 backdrop-blur-lg border border-white/20 text-white rounded-full p-3 shadow-lg"
+          className={`fixed top-4 right-4 z-50 backdrop-blur-lg rounded-full p-3 shadow-lg transition-colors font-medium ${
+            isDark
+              ? 'bg-white/10 hover:bg-white/20 border border-white/20 text-white'
+              : 'bg-black/10 hover:bg-black/20 border border-black/20 text-gray-900'
+          }`}
           aria-label={isFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}
         >
           {isFullscreen ? (
@@ -323,22 +339,16 @@ export default function ProyeccionPage() {
           )}
         </Button>
 
-        {/* Título del evento - FIJO ARRIBA */}
+        {/* Título del evento - Texto en gradiente animado (como invitación digital) */}
         <div className="title-image-container mb-8 flex-shrink-0">
-          <Image
-            src={theme.resources.images.title}
-            alt="Título del evento"
-            width={400}
-            height={150}
-            className="title-image"
-            priority
-          />
-        </div>
-
-        <div className="flex-shrink-0 flex flex-col items-center gap-3 pb-8">
-          <div className="demo-badge-center-bottom relative">
-            <span className="text-xs font-bold">MODO DEMO</span>
-          </div>
+          <GradientText
+            colors={theme.resources.heroGradientText?.colors || ['#04724d', '#34d399', '#588157']}
+            animationSpeed={theme.resources.heroGradientText?.animationSpeed ?? 8}
+            showBorder={false}
+            className="!cursor-default select-none text-center text-2xl md:text-4xl font-secondary leading-tight px-4"
+          >
+            {theme.resources.heroGradientText?.afterCountdownEnds || 'Gracias por acompañarnos'}
+          </GradientText>
         </div>
 
         {/* Contenedor principal - CONTENIDO SCROLLEABLE */}
@@ -346,8 +356,18 @@ export default function ProyeccionPage() {
           {showMessage ? (
             // Mensaje entre imágenes con animación
             <div className="flex items-center justify-center w-full">
-              <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 md:p-12 border-2 border-white/20 shadow-2xl message-animation">
-                <p className="text-white text-2xl md:text-4xl font-bold text-center font-secondary">
+              <div
+                className={`backdrop-blur-lg rounded-2xl p-8 md:p-12 border-2 shadow-2xl message-animation ${
+                  isDark
+                    ? 'bg-white/10 border-white/20'
+                    : 'bg-black/10 border-black/20'
+                }`}
+              >
+                <p
+                  className={`text-2xl md:text-4xl font-bold text-center font-secondary ${
+                    isDark ? 'text-white' : 'text-gray-900'
+                  }`}
+                >
                   {CONFIG.MESSAGE_TEXT}
                 </p>
               </div>
@@ -363,12 +383,20 @@ export default function ProyeccionPage() {
               {currentBatch.map((photo, index) => (
                 photo.isPlaceholder ? (
                   // Placeholder para espacios vacíos
-                  <div 
+                  <div
                     key={photo.id}
-                    className="relative aspect-[9/16] rounded-2xl overflow-hidden shadow-2xl photo-float bg-white/10 backdrop-blur-sm border-2 border-white/30 flex items-center justify-center photo-appear"
+                    className={`relative aspect-[9/16] rounded-2xl overflow-hidden shadow-2xl photo-float backdrop-blur-sm border-2 flex items-center justify-center photo-appear ${
+                      isDark
+                        ? 'bg-white/10 border-white/30'
+                        : 'bg-black/10 border-black/30'
+                    }`}
                     style={{ animationDelay: `${index * 0.15}s` }}
                   >
-                    <p className="text-white text-lg md:text-xl font-semibold text-center font-secondary px-4">
+                    <p
+                      className={`text-lg md:text-xl font-semibold text-center font-secondary px-4 ${
+                        isDark ? 'text-white' : 'text-gray-900'
+                      }`}
+                    >
                       {CONFIG.PLACEHOLDER_TEXT}
                     </p>
                   </div>
@@ -406,16 +434,16 @@ export default function ProyeccionPage() {
           ) : null}
         </div>
 
-        {/* MODO DEMO y Logo al final - uno debajo del otro */}
-        <div className="mt-8 flex-shrink-0 flex flex-col items-center gap-3 pb-8">
-          <a 
-            href="https://eventechy.com" 
-            target="_blank" 
+        {/* Logo Eventechy - anclado abajo dentro del alto fijo (suma al layout, no se superpone) */}
+        <div className="flex-shrink-0 flex justify-center pt-4 pb-2">
+          <a
+            href="https://eventechy.com"
+            target="_blank"
             rel="noopener noreferrer"
             className="hover:opacity-80 transition-opacity"
           >
             <Image
-              src="/logo-fondo-oscuro.png"
+              src={isDark ? '/logo-fondo-oscuro.png' : '/logo-fondo-claro.png'}
               alt="Eventechy"
               width={155}
               height={55}

@@ -93,7 +93,7 @@ export function ProvidersModal() {
         className={`sm:max-w-[500px] max-h-[80vh] flex flex-col ${isDarkMode ? 'dark bg-gray-900 text-white border-gray-700' : 'bg-white'}`}
       >
         <DialogHeader className={`shrink-0 ${isDarkMode ? 'bg-gray-900' : 'bg-white'}`}>
-          <DialogTitle className={`text-center font-semibold ${isDarkMode ? 'text-white' : 'text-[#04724d]'}`}>
+          <DialogTitle className={`text-center font-semibold ${isDarkMode ? 'text-white' : 'text-[var(--color-primary)]'}`}>
             Proveedores del Evento
           </DialogTitle>
         </DialogHeader>

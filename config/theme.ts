@@ -1,19 +1,51 @@
+// ─── COLOR PRINCIPAL (editar solo aquí al clonar) ─────────────────────────────
+// Cambiando primary se actualizan botones, títulos de cards, decos, aurora y gradientes.
+const primary = '#04724d'
+const primaryHover = '#036340'
+const primaryLight = '#34d399'
+const primaryLighter = '#6ee7b7'
+// ─────────────────────────────────────────────────────────────────────────────
+
 export const theme = {
   // Configuración global de fondo para toda la demo
   // mode: 'gradient' mantiene el fondo actual
   // mode: 'aurora' activa el fondo aurora
   background: {
-    mode: 'aurora', // 'gradient' | 'aurora' | 'bokeh' | 'smokey'
+    mode: 'grainient', // 'gradient' | 'aurora' | 'bokeh' | 'smokey' | 'grainient'
     gradient: {
       color1: '#000000',
       color2: '#471069',
       color3: '#196E76',
     },
+    grainient: {
+      color1: '#04724d',
+      color2: '#ffffff',
+      color3: '#aebaa6',
+      timeSpeed: 0.25,
+      colorBalance: -0.44,
+      warpStrength: 1.45,
+      warpFrequency: 3.3,
+      warpSpeed: 3.4,
+      warpAmplitude: 57,
+      blendAngle: 0,
+      blendSoftness: 0.05,
+      rotationAmount: 630,
+      noiseScale: 2,
+      grainAmount: 0.03,
+      grainScale: 2,
+      grainAnimated: false,
+      contrast: 1.0,
+      gamma: 1,
+      saturation: 1,
+      centerX: 0,
+      centerY: 0,
+      zoom: 0.9,
+    },
     aurora: {
       baseColor: '#ffffff',
-      color1: '#04724d',
-      color2: '#34d399',
-      color3: '#6ee7b7',
+      color1: primary,
+      color2: primaryLight,
+      color3: primaryLighter,
       color4: '#ffffff',
       color5: '#2dd4bf',
       opacity: 1,
@@ -37,8 +69,12 @@ export const theme = {
   },
  
 
-  // Colores principales
+  // Colores principales (primary/primaryHover: botones, títulos, countdown, decos)
   colors: {
+    primary,
+    primaryHover,
+    primaryLight,
+    primaryLighter,
     // Elementos de UI
     ui: {
       spinner: 'border-purple-600',
@@ -104,7 +140,7 @@ export const theme = {
     heroGradientText: {
       beforeCountdownEnds: 'Compartí con nosotros una noche inolvidable',
       afterCountdownEnds: 'Gracias por acompañarnos',
-      colors: ['#04724d', '#34d399', '#588157'],
+      colors: [primary, primaryLight, '#588157'],
       animationSpeed: 8,
     },
   },
@@ -140,6 +176,13 @@ export const theme = {
     // mode: 'both' - muestra ambos botones (solo en modo demo)
   },
 
+  // Tipo de contenido del modal de menú/consumibles
+  // withPrices: menú con precios (bebidas y comidas para comprar)
+  // informative: menú de la noche + consumos anexos (ej. casamiento, sin venta)
+  menuModal: {
+    type: 'informative', // 'withPrices' | 'informative'
+  },
+
   // // Configuración del título
   // title: {
   //   image: {
@@ -149,3 +192,57 @@ export const theme = {
   //   }
   // }
 };
+
+/**
+ * Luminancia relativa de un color hex (0 = negro, 1 = blanco).
+ * Usado para decidir si el fondo del tema es claro u oscuro.
+ */
+function hexLuminance(hex: string): number {
+  const h = hex.replace('#', '');
+  const r = parseInt(h.slice(0, 2), 16) / 255;
+  const g = parseInt(h.slice(2, 4), 16) / 255;
+  const b = parseInt(h.slice(4, 6), 16) / 255;
+  return 0.2126 * r + 0.7152 * g + 0.0782 * b;
+}
+
+/**
+ * Indica si el fondo configurado en el tema es predominantemente oscuro.
+ * Sirve para elegir logo (fondo-oscuro vs fondo-claro) sin depender del dark mode.
+ */
+export function isBackgroundDark(): boolean {
+  const bg = theme.background;
+  const mode = bg?.mode || 'gradient';
+
+  // En aurora, bokeh y smokey el baseColor define el fondo real; los demás son acentos
+  if (mode === 'aurora' || mode === 'bokeh' || mode === 'smokey') {
+    const base = bg.aurora?.baseColor ?? '#07070c';
+    if (/^#[0-9A-Fa-f]{6}$/.test(base)) {
+      return hexLuminance(base) < 0.45;
+    }
+  }
+
+  // Gradient: promediar los tres colores del gradiente
+  if (mode === 'gradient' && bg.gradient) {
+    const colors = [bg.gradient.color1, bg.gradient.color2, bg.gradient.color3].filter(
+      (c) => /^#[0-9A-Fa-f]{6}$/.test(c)
+    );
+    if (colors.length > 0) {
+      const avg = colors.reduce((sum, c) => sum + hexLuminance(c), 0) / colors.length;
+      return avg < 0.45;
+    }
+  }
+
+  // Grainient: usar los tres colores principales de la config
+  if (mode === 'grainient' && bg.grainient) {
+    const g = bg.grainient;
+    const colors = [g.color1, g.color2, g.color3].filter(
+      (c) => /^#[0-9A-Fa-f]{6}$/.test(c)
+    );
+    if (colors.length > 0) {
+      const avg = colors.reduce((sum, c) => sum + hexLuminance(c), 0) / colors.length;
+      return avg < 0.45;
+    }
+  }
+
+  return true;
+}

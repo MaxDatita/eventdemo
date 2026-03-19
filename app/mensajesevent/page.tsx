@@ -3,9 +3,11 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import Image from 'next/image'
+import { demoMessages } from '@/data/demo-messages'
+import { isBackgroundDark } from '@/config/theme'
 
 interface Message {
-  id: number;
+  id: number | string;
   nombre: string;
   mensaje: string;
 }
@@ -19,10 +21,14 @@ interface DisplayMessage extends Message {
 
 // Componente para mensaje individual
 function MessageText({ mensaje, nombre }: { mensaje: string; nombre: string }) {
+  const isDark = isBackgroundDark();
+
   return (
     <div className="text-center max-w-lg">
       <p 
-        className="text-2xl font-literary font-semibold mb-2 text-white leading-relaxed italic"
+        className={`text-2xl font-literary font-semibold mb-2 leading-relaxed italic ${
+          isDark ? 'text-white' : 'text-gray-900'
+        }`}
         style={{ 
           display: '-webkit-box',
           WebkitLineClamp: 2,
@@ -33,7 +39,11 @@ function MessageText({ mensaje, nombre }: { mensaje: string; nombre: string }) {
       >
         &ldquo;{mensaje}&rdquo;
       </p>
-      <p className="text-lg font-normal text-white/90">
+      <p
+        className={`text-lg font-normal ${
+          isDark ? 'text-white/90' : 'text-gray-800'
+        }`}
+      >
         — {nombre}
       </p>
     </div>
@@ -54,7 +64,23 @@ export default function MensajesEventPage() {
     refetchInterval: 5 * 60 * 1000, // Refrescar cada 5 minutos
   });
 
-  const allMessages = useMemo(() => messagesQuery.data?.messages || [], [messagesQuery.data?.messages]);
+  const allMessages = useMemo<Message[]>(() => {
+    const sheetMessages = (messagesQuery.data?.messages || [])
+      .filter((msg: { nombre?: string; mensaje?: string }) => msg?.nombre && msg?.mensaje)
+      .map((msg: { id?: number; nombre: string; mensaje: string }, index: number) => ({
+        id: `sheet-${msg.id ?? index}`,
+        nombre: msg.nombre,
+        mensaje: msg.mensaje,
+      }));
+
+    const demo = demoMessages.map(msg => ({
+      id: `demo-${msg.id}`,
+      nombre: msg.nombre,
+      mensaje: msg.mensaje,
+    }));
+
+    return [...demo, ...sheetMessages];
+  }, [messagesQuery.data?.messages]);
 
   // Función para verificar si hay colisión entre mensajes
   const checkCollision = useCallback((x: number, y: number, existingMessages: DisplayMessage[], minDistance: number = 20) => {
@@ -156,11 +182,11 @@ export default function MensajesEventPage() {
       <div className="fixed inset-0 overflow-hidden z-10">
         {/* Título */}
         <div className="fixed top-8 left-1/2 transform -translate-x-1/2 z-20">
-          <h1 className="heading-h1 text-center text-cyan-200">
+          <h1 className="heading-h1 text-center">
             Mensajes de los invitados
           </h1>
           <div className="mt-2 flex justify-center">
-            <div className="bg-purple-600 text-white px-3 py-1 rounded-full backdrop-blur-sm shadow-lg">
+            <div className="bg-[#FF914E] text-white px-3 py-1 rounded-full backdrop-blur-sm shadow-lg">
               <span className="text-xs font-bold">MODO DEMO</span>
             </div>
           </div>
@@ -184,9 +210,9 @@ export default function MensajesEventPage() {
       </div>
 
       {/* Logo fijo abajo */}
-      <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-20">
+      <div className="fixed bottom-3 left-1/2 transform -translate-x-1/2 z-20">
         <Image
-          src="/logo-fondo-oscuro.png"
+          src={isBackgroundDark() ? '/logo-fondo-oscuro.png' : '/logo-fondo-claro.png'}
           alt="Eventechy"
           width={200}
           height={71}
@@ -197,4 +223,3 @@ export default function MensajesEventPage() {
     </>
   );
 }
-

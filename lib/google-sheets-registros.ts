@@ -23,7 +23,8 @@ type TicketAvailabilityResponse = {
 export async function getMessages(
   page: number = 1, 
   pageSize: number = 20, 
-  random: boolean = false
+  random: boolean = false,
+  status: 'approved' | 'pending' | 'rejected' | 'all' = 'approved'
 ): Promise<MessagesResponse> {
   
 
@@ -43,9 +44,15 @@ export async function getMessages(
     }
 
     const allRows = await sheet.getRows();
-    const total = allRows.length;
+    const filteredRows = status === 'all'
+      ? allRows
+      : allRows.filter((row) => {
+          const rowStatus = (row.get('Estado') || '').toString().trim().toLowerCase();
+          return rowStatus === status;
+        });
+    const total = filteredRows.length;
 
-    let rowsToProcess = [...allRows];
+    let rowsToProcess = [...filteredRows];
     if (random) {
       // Mezclar aleatoriamente si se solicita
       rowsToProcess = rowsToProcess.sort(() => Math.random() - 0.5);
@@ -259,4 +266,3 @@ export const checkTicketAvailability = async (
     };
   }
 }; 
-

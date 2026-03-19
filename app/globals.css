@@ -154,10 +154,12 @@
 
   /* Headings */
   .heading-h1 {
-    @apply text-3xl font-bold text-pink-600 mb-4 text-center font-secondary;
+    @apply text-3xl font-bold mb-4 text-center font-secondary;
+    color: var(--color-primary);
   }
   .heading-h1-alt {
-    @apply text-3xl font-bold text-indigo-800 mb-4 text-center font-secondary;
+    @apply text-3xl font-bold mb-4 text-center font-secondary;
+    color: var(--color-primary-hover);
   }
 
   .heading-h2 {
@@ -228,15 +230,15 @@
     margin-bottom: 1.5rem;
   }
 
-  /* Countdown styles (paleta base #04724d) */
+  /* Countdown styles (usa --color-primary desde theme) */
   .countdown-container {
     @apply grid grid-cols-4 gap-2 text-center mb-6 p-4 rounded-2xl backdrop-blur-sm;
-    background: linear-gradient(135deg, rgba(4, 114, 77, 0.25), rgba(5, 138, 92, 0.35));
+    background: linear-gradient(135deg, rgba(var(--color-primary-rgb), 0.25), rgba(var(--color-primary-rgb), 0.35));
   }
 
   .countdown-item {
     @apply flex flex-col items-center justify-center p-2 rounded-2xl backdrop-blur-sm;
-    background-color: #04724d;
+    background-color: var(--color-primary);
   }
 
   .countdown-number {
@@ -249,7 +251,7 @@
 
   .countdown-message {
     @apply body-large text-center mb-2 text-white p-4 rounded-xl backdrop-blur-sm;
-    background: linear-gradient(to right, #04724d, #058a5c);
+    background: linear-gradient(to right, var(--color-primary), var(--color-primary-hover));
   }
 
   /* Live indicator */
@@ -270,10 +272,10 @@
     background-color: #FF914E;
   }
 
-  /* DEMO: Badge de modo demo centrado abajo */
+  /* DEMO: Badge de modo demo centrado abajo - ancho completo, sin bordes redondeados */
   .demo-badge-center-bottom {
-    @apply text-white px-3 py-1 
-    rounded-full backdrop-blur-sm shadow-lg flex items-center justify-center;
+    @apply w-full rounded-none text-white px-3 py-1 
+    backdrop-blur-sm shadow-lg flex items-center justify-center;
     background-color: #FF914E;
   }
 
@@ -485,5 +487,28 @@
   @keyframes smoke-float-e {
     0% { transform: translate3d(0, 0, 0) scale(1); }
     100% { transform: translate3d(-9vw, -7vh, 0) scale(1.16); }
+  }
+
+  /* Fix para scroll en modales cuando aparece el teclado en mobile */
+  [data-radix-dialog-content] {
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Mejorar comportamiento del scroll interno en modales */
+  [data-radix-dialog-content] form,
+  [data-radix-dialog-content] .dialog-scroll-content {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Ajustar modal cuando el teclado está abierto (viewport reducido) */
+  @media (max-height: 500px) {
+    [data-radix-dialog-content].keyboard-aware {
+      top: 1rem !important;
+      transform: translateX(-50%) !important;
+      max-height: calc(100dvh - 2rem) !important;
+    }
   }
 }

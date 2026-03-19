@@ -1,24 +1,19 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { theme } from '@/config/theme'
 import Image from 'next/image'
+import { demoMessages } from '@/data/demo-messages'
+import { isBackgroundDark } from '@/config/theme'
 
 interface CarouselMessage {
-  id: number;
+  id: number | string;
   nombre: string;
   mensaje: string;
 }
 
-interface ApiMessage {
-  nombre: string
-  mensaje: string
-}
-
 export default function MensajesPage() {
   const [currentSlide, setCurrentSlide] = useState(0)
-  const carouselRef = useRef<HTMLDivElement>(null)
 
   // Query para el carrusel (aleatoria)
   const carouselQuery = useQuery({
@@ -31,7 +26,23 @@ export default function MensajesPage() {
     refetchInterval: 5 * 60 * 1000, // Refrescar cada 5 minutos
   });
 
-  const carouselMessages = carouselQuery.data?.messages || [];
+  const carouselMessages = useMemo<CarouselMessage[]>(() => {
+    const sheetMessages = (carouselQuery.data?.messages || [])
+      .filter((msg: { nombre?: string; mensaje?: string }) => msg?.nombre && msg?.mensaje)
+      .map((msg: { id?: number; nombre: string; mensaje: string }, index: number) => ({
+        id: `sheet-${msg.id ?? index}`,
+        nombre: msg.nombre,
+        mensaje: msg.mensaje
+      }));
+
+    const demo = demoMessages.map(msg => ({
+      id: `demo-${msg.id}`,
+      nombre: msg.nombre,
+      mensaje: msg.mensaje
+    }));
+
+    return [...demo, ...sheetMessages];
+  }, [carouselQuery.data?.messages]);
 
   // Efecto para el carrusel automático
   useEffect(() => {
@@ -44,6 +55,12 @@ export default function MensajesPage() {
     return () => clearInterval(interval);
   }, [carouselMessages.length]);
 
+  useEffect(() => {
+    if (currentSlide > Math.max(0, carouselMessages.length - 1)) {
+      setCurrentSlide(0);
+    }
+  }, [carouselMessages.length, currentSlide]);
+
   return (
     <>
       <div className="bg-gradient-animation" />
@@ -51,12 +68,12 @@ export default function MensajesPage() {
         <div className="w-full max-w-4xl mx-auto relative z-10">
        
         {/* Título */}
-        <h1 className="heading-h1 text-center mb-2 text-cyan-200">
+        <h1 className="heading-h1 text-center mb-2">
           Mensajes de los invitados
         </h1>
         {/* Badge Modo Demo */}
         <div className="mb-6 flex justify-center">
-          <div className="bg-purple-600 text-white px-3 py-1 rounded-full backdrop-blur-sm shadow-lg">
+          <div className="bg-[#FF914E] text-white px-3 py-1 rounded-full backdrop-blur-sm shadow-lg">
             <span className="text-xs font-bold">MODO DEMO</span>
           </div>
         </div>
@@ -92,10 +109,10 @@ export default function MensajesPage() {
             />
           ))}
         </div>
-         {/* Logo */}
-         <div className="mt-8 flex justify-center">
+        {/* Logo */}
+        <div className="mt-8 flex justify-center">
           <Image
-            src="/logo-fondo-oscuro.png"
+            src={isBackgroundDark() ? '/logo-fondo-oscuro.png' : '/logo-fondo-claro.png'}
             alt="Eventechy"
             width={200}
             height={71}

@@ -8,9 +8,14 @@ export async function GET(request: Request) {
   const page = parseInt(searchParams.get('page') || '1');
   const pageSize = parseInt(searchParams.get('pageSize') || '20');
   const random = searchParams.get('random') === 'true';
+  const statusParam = (searchParams.get('status') || 'approved').toLowerCase();
+  const status: 'approved' | 'pending' | 'rejected' | 'all' =
+    statusParam === 'approved' || statusParam === 'pending' || statusParam === 'rejected' || statusParam === 'all'
+      ? statusParam
+      : 'approved';
 
   try {
-    const result = await getMessages(page, pageSize, random);
+    const result = await getMessages(page, pageSize, random, status);
     
     return NextResponse.json({
       messages: result.messages,
@@ -29,7 +34,14 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { fecha, nombre, mensaje } = body;
+    const { nombre, mensaje } = body;
+
+    if (!nombre || !mensaje) {
+      return NextResponse.json(
+        { error: 'Nombre y mensaje son requeridos' },
+        { status: 400 }
+      );
+    }
     
     const jwt = new JWT({
       email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
@@ -44,14 +56,44 @@ export async function POST(request: Request) {
     if (!sheet) {
       throw new Error('No se encontró la hoja "Mensajes"');
     }
-    
-    await sheet.addRow({
-      Fecha: fecha,
-      Nombre: nombre,
-      Mensaje: mensaje
-    });
 
-    return NextResponse.json({ success: true });
+    const rows = await sheet.getRows();
+    const nextId = rows.reduce((max, row) => {
+      const current = Number(row.get('id'));
+      if (Number.isFinite(current)) {
+        return Math.max(max, current);
+      }
+      return max;
+    }, 0) + 1;
+    const now = new Date();
+    const datePart = new Intl.DateTimeFormat('es-AR', {
+      timeZone: 'America/Argentina/Salta',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    }).format(now);
+    const timePart = new Intl.DateTimeFormat('es-AR', {
+      timeZone: 'America/Argentina/Salta',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    }).format(now);
+    const formattedDate = `${datePart} ${timePart}`;
+    
+    await sheet.addRow(
+      {
+        id: nextId,
+        Fecha: formattedDate,
+        Nombre: String(nombre).trim(),
+        Mensaje: String(mensaje).trim(),
+        Estado: 'pending',
+        moderation_score: '',
+      },
+      { raw: false }
+    );
+
+    return NextResponse.json({ success: true, id: nextId });
   } catch (error) {
     console.error('Error en POST /api/messages:', error);
     return NextResponse.json(

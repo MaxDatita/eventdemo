@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { useDemoDates } from '@/contexts/DemoContext';
+import { isBackgroundDark } from '@/config/theme';
 import { Check, X, Lock, Camera } from 'lucide-react';
 import Image from 'next/image';
 
@@ -294,7 +295,7 @@ function ModerationContent() {
               <>
                 <Button
                   onClick={() => handleModeration(photo.id, 'approve')}
-                  className="bg-[#FF914E] hover:bg-[#ff8132] text-white flex items-center gap-2 px-5 py-2 rounded-full"
+                  className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2 px-5 py-2 rounded-full"
                 >
                   <Check className="h-4 w-4" />
                   <span>Aprobar</span>
@@ -319,10 +320,12 @@ function ModerationContent() {
     return (
       <>
         <div className="bg-gradient-animation" />
-        <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50 flex flex-col items-center gap-3">
-          <div className="demo-badge-center-bottom relative">
-            <span className="text-xs font-bold">MODO DEMO</span>
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 flex flex-col items-center gap-3">
+          <div className="demo-badge-center-bottom relative rounded-full w-auto px-4">
+            <span className="text-xs font-bold text-white">MODO DEMO</span>
           </div>
+        </div>
+        <div className="fixed bottom-3 left-0 right-0 flex justify-center z-50">
           <a 
             href="https://eventechy.com" 
             target="_blank" 
@@ -330,7 +333,7 @@ function ModerationContent() {
             className="hover:opacity-80 transition-opacity"
           >
             <Image
-              src="/logo-fondo-oscuro.png"
+              src={isBackgroundDark() ? '/logo-fondo-oscuro.png' : '/logo-fondo-claro.png'}
               alt="Eventechy"
               width={155}
               height={55}
@@ -339,13 +342,13 @@ function ModerationContent() {
           </a>
         </div>
         <div className="content-container flex items-center justify-center">
-          <Card className="auth-card rounded-xl">
+          <Card className="w-full max-w-md rounded-xl border-2 border-t-4 border-[#FF914E] border-t-[#FFCF6E] shadow-lg bg-white p-8">
             <div className="text-center space-y-4">
-              <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mx-auto">
+              <div className="w-16 h-16 bg-[#FF914E] rounded-full flex items-center justify-center mx-auto">
                 <Lock className="h-8 w-8 text-white" />
               </div>
-              <h1 className="heading-h1-alt">Panel de Moderación</h1>
-              <p className="auth-card-text">Ingresa la contraseña para acceder <br/><span className="text-ls text-gray-500">(admin123)</span></p>
+              <h1 className="text-2xl font-bold text-gray-900 font-secondary">Panel de Moderación</h1>
+              <p className="text-gray-700">Ingresa la contraseña para acceder <br/><span className="text-sm text-gray-500">(admin123)</span></p>
               <Input
                 type="password"
                 value={password}
@@ -353,7 +356,10 @@ function ModerationContent() {
                 placeholder="Contraseña"
                 onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
               />
-              <Button onClick={handleLogin} className="w-full">
+              <Button
+                onClick={handleLogin}
+                className="w-full bg-[#FFCF6E] hover:bg-[#FFCF6E]/90 text-gray-800 border-2 border-gray-700"
+              >
                 Acceder
               </Button>
             </div>
@@ -372,63 +378,70 @@ function ModerationContent() {
   return (
     <>
       <div className="bg-gradient-animation" />
-      <div className="demo-badge-center-bottom"><span className="text-xs font-bold">MODO DEMO</span></div>
-      <div className="content-container">
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="heading-h2">Panel de Moderación</h1>
-          <Button 
-            variant="secondary" 
-            onClick={() => setIsAuthenticated(false)}
-            className={`border ${isDarkMode ? 'border-gray-600 text-white' : 'border-white/60 text-white'} bg-transparent hover:bg-white/10`}
-          >
-            Cerrar Sesión
-          </Button>
+      <div className="fixed left-0 right-0 top-0 z-10">
+        <div className="demo-badge-center-bottom"><span className="text-xs font-bold">MODO DEMO</span></div>
+      </div>
+      <div className="content-container pt-10">
+        {/* Sección con texto: fondo blanco y colores de la marca (#FFCF6E, #FF914E) */}
+        <div className="bg-white rounded-xl shadow-md p-6 mb-6 border-2 border-[#FF914E] border-t-4 border-t-[#FFCF6E]">
+          <div className="flex items-center justify-between mb-6">
+            <h1 className="text-xl font-semibold text-center font-secondary text-gray-900">
+              Panel de Moderación
+            </h1>
+            <Button 
+              variant="secondary" 
+              onClick={() => setIsAuthenticated(false)}
+              className="border-2 border-gray-700 text-gray-800 bg-[#FFCF6E] hover:bg-[#FFCF6E]/90 transition-colors"
+            >
+              Cerrar Sesión
+            </Button>
+          </div>
+
+          {/* Tabs - activo con color de marca */}
+          <div className="flex gap-4 border-b border-gray-200">
+            <button
+              onClick={() => setActiveTab('pending')}
+              className={`pb-3 px-4 font-semibold transition-colors ${
+                activeTab === 'pending'
+                  ? 'text-[#FF914E] border-b-2 border-[#FF914E]'
+                  : 'text-gray-600 hover:text-[#FF914E]/80'
+              }`}
+            >
+              Pendientes ({pendingPhotos.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('approved')}
+              className={`pb-3 px-4 font-semibold transition-colors ${
+                activeTab === 'approved'
+                  ? 'text-[#FF914E] border-b-2 border-[#FF914E]'
+                  : 'text-gray-600 hover:text-[#FF914E]/80'
+              }`}
+            >
+              Aprobadas ({approvedPhotos.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('rejected')}
+              className={`pb-3 px-4 font-semibold transition-colors ${
+                activeTab === 'rejected'
+                  ? 'text-[#FF914E] border-b-2 border-[#FF914E]'
+                  : 'text-gray-600 hover:text-[#FF914E]/80'
+              }`}
+            >
+              Rechazadas ({rejectedPhotos.length})
+            </button>
+          </div>
         </div>
 
-        {/* Tabs */}
-        <div className="flex gap-4 mb-6 border-b border-white/20">
-          <button
-            onClick={() => setActiveTab('pending')}
-            className={`pb-3 px-4 font-semibold transition-colors ${
-              activeTab === 'pending'
-                ? 'text-white border-b-2 border-white'
-                : 'text-white/60 hover:text-white/80'
-            }`}
-          >
-            Pendientes ({pendingPhotos.length})
-          </button>
-          <button
-            onClick={() => setActiveTab('approved')}
-            className={`pb-3 px-4 font-semibold transition-colors ${
-              activeTab === 'approved'
-                ? 'text-white border-b-2 border-white'
-                : 'text-white/60 hover:text-white/80'
-            }`}
-          >
-            Aprobadas ({approvedPhotos.length})
-          </button>
-          <button
-            onClick={() => setActiveTab('rejected')}
-            className={`pb-3 px-4 font-semibold transition-colors ${
-              activeTab === 'rejected'
-                ? 'text-white border-b-2 border-white'
-                : 'text-white/60 hover:text-white/80'
-            }`}
-          >
-            Rechazadas ({rejectedPhotos.length})
-          </button>
-        </div>
-
-        {/* Contenido */}
+        {/* Contenido - fondo transparente, las cards ya tienen su propio fondo */}
         {isLoading && currentPhotos.length === 0 ? (
           <div className="text-center py-12">
-            <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-white">Cargando fotos...</p>
+            <div className={`w-8 h-8 border-4 border-t-transparent rounded-full animate-spin mx-auto mb-4 ${isDarkMode ? 'border-blue-500' : 'border-blue-600'}`}></div>
+            <p className={isDarkMode ? 'text-white' : 'text-gray-900'}>Cargando fotos...</p>
           </div>
         ) : currentPhotos.length === 0 ? (
           <div className="text-center py-12">
-            <Camera className="h-16 w-16 mx-auto mb-4 text-white/70" />
-            <p className="text-lg text-white/90">
+            <Camera className={`h-16 w-16 mx-auto mb-4 ${isDarkMode ? 'text-white/70' : 'text-gray-500'}`} />
+            <p className={`text-lg ${isDarkMode ? 'text-white/90' : 'text-gray-800'}`}>
               {activeTab === 'pending' 
                 ? 'No hay fotos pendientes de moderación'
                 : 'No hay fotos aprobadas'}
@@ -442,18 +455,41 @@ function ModerationContent() {
             
             {/* Indicador de actualización */}
             {isRefreshing && (
-              <div className="fixed bottom-20 left-1/2 transform -translate-x-1/2 bg-purple-600 text-white px-4 py-2 rounded-full flex items-center gap-2 z-50 shadow-lg">
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              <div className="fixed bottom-20 left-1/2 transform -translate-x-1/2 bg-[#FFCF6E] text-black border-2 border-black px-4 py-2 rounded-full flex items-center gap-2 z-50 shadow-lg">
+                <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
                 <span className="text-sm font-semibold">Actualizando...</span>
               </div>
             )}
           </>
         )}
+
+      </div>
+
+      {/* Logo según colores predominantes del fondo (no dark mode), anclado abajo */}
+      <div className="fixed bottom-3 left-0 right-0 flex justify-center z-10 pointer-events-none">
+        <a
+          href="https://eventechy.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="pointer-events-auto hover:opacity-80 transition-opacity"
+        >
+          <Image
+            src={isBackgroundDark() ? '/logo-fondo-oscuro.png' : '/logo-fondo-claro.png'}
+            alt="Eventechy"
+            width={155}
+            height={55}
+            className="rounded-lg"
+          />
+        </a>
       </div>
 
       {/* Modal para ver foto grande */}
       <Dialog open={!!selectedPhoto} onOpenChange={() => setSelectedPhoto(null)}>
-        <DialogContent className="max-w-4xl w-[95vw] max-h-[90vh] p-0 bg-transparent border-none">
+        <DialogContent
+          className="max-w-4xl w-[95vw] max-h-[90vh] p-0 bg-transparent border-none"
+          closeButtonClassName="!text-white top-2 right-4"
+          closeButtonIconClassName="h-6 w-6"
+        >
           {selectedPhoto && (
             <div className="relative w-full h-full flex items-center justify-center">
               <Image

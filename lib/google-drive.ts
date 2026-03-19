@@ -1,8 +1,19 @@
 import { google } from 'googleapis';
 import { Readable } from 'stream';
+import { createGoogleOAuthClient, resolveGoogleOAuthRedirectUri } from '@/lib/google-oauth';
 
 // Cliente de Google Drive lazy (se crea solo cuando se necesita)
 let driveClient: ReturnType<typeof google.drive> | null = null;
+
+type CacheEntry<T> = {
+  value: T;
+  expiresAt: number;
+};
+
+const VERIFY_CACHE_TTL_MS = 5 * 60 * 1000;
+const MEDIA_CACHE_TTL_MS = 20 * 1000;
+const verifyCache = new Map<string, CacheEntry<boolean>>();
+const mediaCache = new Map<string, CacheEntry<DrivePhoto[]>>();
 
 // Función para obtener cliente de Google Drive (con manejo de errores)
 function getDriveClient() {
@@ -11,11 +22,26 @@ function getDriveClient() {
   }
 
   try {
+    const oauthClientId = process.env.GOOGLE_OAUTH_CLIENT_ID;
+    const oauthClientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET;
+    const oauthRefreshToken = process.env.GOOGLE_OAUTH_REFRESH_TOKEN;
+
+    // Prioridad: OAuth (si hay refresh token), fallback a Service Account
+    if (oauthClientId && oauthClientSecret && oauthRefreshToken) {
+      const redirectUri = resolveGoogleOAuthRedirectUri(process.env.NODE_ENV === 'production' ? 'prod' : 'local');
+      const oauth2Client = createGoogleOAuthClient(redirectUri);
+      oauth2Client.setCredentials({ refresh_token: oauthRefreshToken });
+      driveClient = google.drive({ version: 'v3', auth: oauth2Client });
+      return driveClient;
+    }
+
     const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
     const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
 
     if (!clientEmail || !privateKey) {
-      throw new Error('GOOGLE_SERVICE_ACCOUNT_EMAIL o GOOGLE_PRIVATE_KEY no están configurados');
+      throw new Error(
+        'No hay credenciales de Google Drive. Configura OAuth (CLIENT_ID/CLIENT_SECRET/REFRESH_TOKEN) o Service Account.'
+      );
     }
 
     // Validar formato básico de la clave privada
@@ -39,6 +65,10 @@ function getDriveClient() {
   }
 }
 
+export function getDriveApiClient() {
+  return getDriveClient();
+}
+
 export interface DrivePhoto {
   id: string;
   name: string;
@@ -50,6 +80,20 @@ export interface DrivePhoto {
   mimeType?: string;
 }
 
+function getCachedValue<T>(cache: Map<string, CacheEntry<T>>, key: string): T | null {
+  const entry = cache.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.expiresAt) {
+    cache.delete(key);
+    return null;
+  }
+  return entry.value;
+}
+
+function setCachedValue<T>(cache: Map<string, CacheEntry<T>>, key: string, value: T, ttlMs: number) {
+  cache.set(key, { value, expiresAt: Date.now() + ttlMs });
+}
+
 export class GoogleDriveService {
   private folderId: string;
   private approvedFolderId: string | null = null;
@@ -59,10 +103,30 @@ export class GoogleDriveService {
   private creatingApprovedFolder: Promise<string> | null = null;
   private creatingRejectedFolder: Promise<string> | null = null;
 
-  constructor() {
-    this.folderId = process.env.GOOGLE_DRIVE_FOLDER_ID || '';
+  constructor(folderId?: string) {
+    this.folderId = folderId || process.env.GOOGLE_DRIVE_FOLDER_ID || '';
     if (!this.folderId) {
       throw new Error('GOOGLE_DRIVE_FOLDER_ID no está configurado');
+    }
+  }
+
+  private invalidateCaches(folderIds: string[] = []) {
+    verifyCache.delete(this.folderId);
+
+    for (const [key] of mediaCache) {
+      if (key.includes(this.folderId)) {
+        mediaCache.delete(key);
+      }
+    }
+
+    for (const folderId of folderIds) {
+      if (!folderId) continue;
+      verifyCache.delete(folderId);
+      for (const [key] of mediaCache) {
+        if (key.includes(folderId)) {
+          mediaCache.delete(key);
+        }
+      }
     }
   }
 
@@ -261,6 +325,7 @@ export class GoogleDriveService {
         supportsAllDrives: true,
         supportsTeamDrives: true,
       });
+      this.invalidateCaches([targetFolderId]);
     } catch (error) {
       console.error('Error moving file:', error);
       throw new Error('Error al mover el archivo');
@@ -320,6 +385,8 @@ export class GoogleDriveService {
         console.warn('No se pudieron configurar permisos públicos (puede que ya existan):', permError);
       }
 
+      this.invalidateCaches();
+
       return {
         id: fileId,
         name: response.data.name || fileMetadata.name,
@@ -331,6 +398,7 @@ export class GoogleDriveService {
           displayName: owner.displayName || 'Unknown'
         })),
       };
+      
     } catch (error) {
       console.error('Error uploading to Google Drive:', error);
       
@@ -353,6 +421,10 @@ export class GoogleDriveService {
   // Excluye las que están en carpetas de aprobadas o rechazadas
   async getPhotos(): Promise<DrivePhoto[]> {
     try {
+      const cacheKey = `pending:${this.folderId}`;
+      const cached = getCachedValue(mediaCache, cacheKey);
+      if (cached) return cached;
+
       const approvedFolderId = await this.getOrCreateApprovedFolder();
       const rejectedFolderId = await this.getOrCreateRejectedFolder();
       
@@ -386,6 +458,7 @@ export class GoogleDriveService {
         })),
       })) || [];
 
+      setCachedValue(mediaCache, cacheKey, photos, MEDIA_CACHE_TTL_MS);
       return photos;
     } catch (error) {
       console.error('Error fetching photos from Google Drive:', error);
@@ -397,6 +470,9 @@ export class GoogleDriveService {
   async getApprovedPhotos(): Promise<DrivePhoto[]> {
     try {
       const approvedFolderId = await this.getOrCreateApprovedFolder();
+      const cacheKey = `approved:${approvedFolderId}`;
+      const cached = getCachedValue(mediaCache, cacheKey);
+      if (cached) return cached;
       
       const response = await getDriveClient().files.list({
         q: `'${approvedFolderId}' in parents and (mimeType contains 'image/' or mimeType contains 'video/')`,
@@ -477,6 +553,7 @@ export class GoogleDriveService {
         })
       );
       
+      setCachedValue(mediaCache, cacheKey, filesWithPublicAccess, MEDIA_CACHE_TTL_MS);
       return filesWithPublicAccess;
     } catch (error) {
       console.error('Error fetching approved photos from Google Drive:', error);
@@ -488,6 +565,9 @@ export class GoogleDriveService {
   async getRejectedPhotos(): Promise<DrivePhoto[]> {
     try {
       const rejectedFolderId = await this.getOrCreateRejectedFolder();
+      const cacheKey = `rejected:${rejectedFolderId}`;
+      const cached = getCachedValue(mediaCache, cacheKey);
+      if (cached) return cached;
       
       const response = await getDriveClient().files.list({
         q: `'${rejectedFolderId}' in parents and mimeType contains 'image/'`,
@@ -498,7 +578,7 @@ export class GoogleDriveService {
         corpora: 'allDrives',
       });
 
-      return response.data.files?.map(file => ({
+      const photos = response.data.files?.map(file => ({
         id: file.id!,
         name: file.name!,
         webViewLink: file.webViewLink!,
@@ -509,6 +589,9 @@ export class GoogleDriveService {
           displayName: owner.displayName || 'Unknown'
         })),
       })) || [];
+
+      setCachedValue(mediaCache, cacheKey, photos, MEDIA_CACHE_TTL_MS);
+      return photos;
     } catch (error) {
       console.error('Error fetching rejected photos from Google Drive:', error);
       throw new Error('Error al obtener fotos rechazadas');
@@ -524,6 +607,10 @@ export class GoogleDriveService {
       if (!previaFolderId) {
         return [];
       }
+
+      const cacheKey = `previa:${previaFolderId}`;
+      const cached = getCachedValue(mediaCache, cacheKey);
+      if (cached) return cached;
       
       // Buscar tanto imágenes como videos
       const response = await getDriveClient().files.list({
@@ -605,11 +692,49 @@ export class GoogleDriveService {
         })
       );
       
+      setCachedValue(mediaCache, cacheKey, filesWithPublicAccess, MEDIA_CACHE_TTL_MS);
       return filesWithPublicAccess;
     } catch (error) {
       console.error('Error fetching previa photos from Google Drive:', error);
       // Retornar array vacío en caso de error en lugar de lanzar excepción
       return [];
+    }
+  }
+
+  // Obtener media (imágenes/videos) que está DIRECTAMENTE en la carpeta configurada
+  async getFolderMedia(): Promise<DrivePhoto[]> {
+    try {
+      const cacheKey = `folder:${this.folderId}`;
+      const cached = getCachedValue(mediaCache, cacheKey);
+      if (cached) return cached;
+
+      const response = await getDriveClient().files.list({
+        q: `'${this.folderId}' in parents and (mimeType contains 'image/' or mimeType contains 'video/') and trashed=false`,
+        fields: 'files(id,name,webViewLink,thumbnailLink,webContentLink,createdTime,owners,mimeType)',
+        orderBy: 'createdTime desc',
+        supportsAllDrives: true,
+        includeItemsFromAllDrives: true,
+        corpora: 'allDrives',
+      });
+
+      const photos = response.data.files?.map(file => ({
+        id: file.id!,
+        name: file.name!,
+        webViewLink: file.webViewLink || '',
+        thumbnailLink: file.thumbnailLink || '',
+        webContentLink: file.webContentLink || '',
+        createdTime: file.createdTime || new Date().toISOString(),
+        mimeType: file.mimeType || '',
+        owners: (file.owners || []).map(owner => ({
+          displayName: owner.displayName || 'Unknown'
+        })),
+      })) || [];
+
+      setCachedValue(mediaCache, cacheKey, photos, MEDIA_CACHE_TTL_MS);
+      return photos;
+    } catch (error) {
+      console.error('Error fetching folder media from Google Drive:', error);
+      throw new Error('Error al obtener contenido de la carpeta de Google Drive');
     }
   }
 
@@ -620,6 +745,7 @@ export class GoogleDriveService {
         fileId: fileId,
         supportsAllDrives: true,
       });
+      this.invalidateCaches();
     } catch (error) {
       console.error('Error deleting photo from Google Drive:', error);
       throw new Error('Error al eliminar la foto de Google Drive');
@@ -646,6 +772,7 @@ export class GoogleDriveService {
           console.warn(`No se pudo hacer pública la imagen ${photo.id}:`, error);
         }
       }
+      this.invalidateCaches();
     } catch (error) {
       console.error('Error making photos public:', error);
       throw new Error('Error al hacer públicas las fotos');
@@ -655,6 +782,9 @@ export class GoogleDriveService {
   // Verificar si la carpeta existe y es accesible
   async verifyFolder(): Promise<boolean> {
     try {
+      const cached = getCachedValue(verifyCache, this.folderId);
+      if (cached !== null) return cached;
+
       const drive = getDriveClient();
       const response = await drive.files.get({
         fileId: this.folderId,
@@ -668,10 +798,12 @@ export class GoogleDriveService {
 
       const capabilities = response.data.capabilities;
       if (capabilities && !capabilities.canEdit && !capabilities.canAddChildren) {
-        const serviceAccountEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-        throw new Error(`No tienes permisos de escritura en esta carpeta. Por favor, comparte la carpeta "${response.data.name}" con el Service Account: ${serviceAccountEmail} y dale permisos de "Editor" o "Colaborador".`);
+        throw new Error(
+          `No hay permisos de escritura en la carpeta "${response.data.name}". Verifica que la cuenta autenticada tenga rol de Editor/Colaborador.`
+        );
       }
 
+      setCachedValue(verifyCache, this.folderId, true, VERIFY_CACHE_TTL_MS);
       return true;
     } catch (error) {
       console.error('Error verifying Google Drive folder:', error);
@@ -679,8 +811,9 @@ export class GoogleDriveService {
       if (error instanceof Error) {
         const errorStr = error.message.toLowerCase();
         if (errorStr.includes('permission') || errorStr.includes('403') || errorStr.includes('storage quota')) {
-          const serviceAccountEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-          throw new Error(`La carpeta de Google Drive debe estar compartida con el Service Account. Comparte la carpeta con: ${serviceAccountEmail} y dale permisos de "Editor" o "Colaborador". Más información: https://developers.google.com/workspace/drive/api/guides/about-shareddrives`);
+          throw new Error(
+            'No hay permisos suficientes para la carpeta de Google Drive. Comparte la carpeta con la cuenta autenticada por OAuth (o Service Account) y dale permisos de Editor/Colaborador.'
+          );
         }
       }
       
@@ -731,9 +864,14 @@ let googleDriveServiceInstance: GoogleDriveService | null = null;
 
 export function getGoogleDriveService(): GoogleDriveService | null {
   // Solo inicializar si las variables de entorno están configuradas
-  if (!process.env.GOOGLE_DRIVE_FOLDER_ID || 
-      !process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || 
-      !process.env.GOOGLE_PRIVATE_KEY) {
+  const hasFolderId = !!process.env.GOOGLE_DRIVE_FOLDER_ID;
+  const hasOAuth =
+    !!process.env.GOOGLE_OAUTH_CLIENT_ID &&
+    !!process.env.GOOGLE_OAUTH_CLIENT_SECRET &&
+    !!process.env.GOOGLE_OAUTH_REFRESH_TOKEN;
+  const hasServiceAccount = !!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL && !!process.env.GOOGLE_PRIVATE_KEY;
+
+  if (!hasFolderId || (!hasOAuth && !hasServiceAccount)) {
     return null;
   }
 
@@ -748,3 +886,31 @@ export function getGoogleDriveService(): GoogleDriveService | null {
   return googleDriveServiceInstance;
 }
 
+export function getGoogleDriveServiceForFolder(folderId: string): GoogleDriveService | null {
+  const hasOAuth =
+    !!process.env.GOOGLE_OAUTH_CLIENT_ID &&
+    !!process.env.GOOGLE_OAUTH_CLIENT_SECRET &&
+    !!process.env.GOOGLE_OAUTH_REFRESH_TOKEN;
+  const hasServiceAccount = !!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL && !!process.env.GOOGLE_PRIVATE_KEY;
+
+  if (!folderId || (!hasOAuth && !hasServiceAccount)) {
+    return null;
+  }
+
+  try {
+    return new GoogleDriveService(folderId);
+  } catch (error) {
+    console.error('Error inicializando GoogleDriveService para carpeta específica:', error);
+    return null;
+  }
+}
+
+export function isGoogleDriveConfigured(): boolean {
+  const hasFolderId = !!process.env.GOOGLE_DRIVE_FOLDER_ID;
+  const hasOAuth =
+    !!process.env.GOOGLE_OAUTH_CLIENT_ID &&
+    !!process.env.GOOGLE_OAUTH_CLIENT_SECRET &&
+    !!process.env.GOOGLE_OAUTH_REFRESH_TOKEN;
+  const hasServiceAccount = !!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL && !!process.env.GOOGLE_PRIVATE_KEY;
+  return hasFolderId && (hasOAuth || hasServiceAccount);
+}

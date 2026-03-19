@@ -70,7 +70,7 @@ const MapModal = ({
           <button
             type="button"
             aria-label="Cerrar y volver a Logística"
-            className="absolute right-2 top-2 z-10 h-9 w-9 rounded-full bg-[#04724d] hover:bg-[#036340] flex items-center justify-center text-white shadow-md transition-colors focus:outline-none focus:ring-2 focus:ring-white/50"
+            className="absolute right-2 top-2 z-10 h-9 w-9 rounded-full bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] flex items-center justify-center text-white shadow-md transition-colors focus:outline-none focus:ring-2 focus:ring-white/50"
             onClick={() => {
               onClose()
               onReturn()
@@ -221,7 +221,7 @@ export function LogisticsModal({ data = defaultLogisticsData }: LogisticsModalPr
         </DialogTrigger>
         <DialogContent className={`sm:max-w-[425px] ${getDialogHeight()} flex flex-col ${isDarkMode ? 'dark bg-gray-900 text-white border-gray-700' : 'bg-white'}`}>
           <DialogHeader className="text-center">
-            <DialogTitle className={`text-center font-semibold ${isDarkMode ? 'text-white' : 'text-[#04724d]'}`}>{contentType === 'schedule' ? "Cronograma del Evento" : "Logística del Evento"}</DialogTitle>
+            <DialogTitle className={`text-center font-semibold ${isDarkMode ? 'text-white' : 'text-[var(--color-primary)]'}`}>{contentType === 'schedule' ? "Cronograma del Evento" : "Logística del Evento"}</DialogTitle>
           </DialogHeader>
 
           <div className="flex-1 overflow-hidden">
