@@ -6,8 +6,10 @@ import SmokeyBackground from '@/components/ui/SmokeyBackground';
 import Grainient from '@/components/Grainient';
 
 export function BackgroundLayer() {
-  if ((theme.background as any).mode === 'grainient') {
-    const g = (theme.background as any).grainient ?? {};
+  const background = theme.background;
+
+  if (background.mode === 'grainient') {
+    const g = background.grainient ?? {};
 
     return (
       <div className="fixed inset-0 z-0 pointer-events-none">
@@ -41,8 +43,8 @@ export function BackgroundLayer() {
     );
   }
 
-  if (theme.background.mode === 'gradient') {
-    const gradient = theme.background.gradient;
+  if (background.mode === 'gradient') {
+    const gradient = background.gradient;
     return (
       <div
         className="fixed inset-0 z-0 pointer-events-none"
@@ -53,14 +55,14 @@ export function BackgroundLayer() {
     );
   }
 
-  if (theme.background.mode === 'bokeh') {
-    const base = theme.background.aurora.baseColor || '#07070c';
-    const c1 = theme.background.aurora.color1;
-    const c2 = theme.background.aurora.color2;
-    const c3 = theme.background.aurora.color3;
-    const c4 = theme.background.aurora.color4;
-    const c5 = theme.background.aurora.color5 || c2;
-    const bokeh = theme.background.bokeh || {};
+  if (background.mode === 'bokeh') {
+    const base = background.aurora.baseColor || '#07070c';
+    const c1 = background.aurora.color1;
+    const c2 = background.aurora.color2;
+    const c3 = background.aurora.color3;
+    const c4 = background.aurora.color4;
+    const c5 = background.aurora.color5 || c2;
+    const bokeh = background.bokeh || {};
 
     const colors = [
       `${hexToRgba(c1, 0.32)}`,
@@ -85,14 +87,14 @@ export function BackgroundLayer() {
     );
   }
 
-  if (theme.background.mode === 'smokey') {
-    const c1 = theme.background.aurora.color1;
-    const c2 = theme.background.aurora.color2;
-    const c3 = theme.background.aurora.color3;
-    const c4 = theme.background.aurora.color4;
-    const c5 = theme.background.aurora.color5 || c2;
-    const base = theme.background.aurora.baseColor || '#0a1013';
-    const smokey = theme.background.smokey || {};
+  if (background.mode === 'smokey') {
+    const c1 = background.aurora.color1;
+    const c2 = background.aurora.color2;
+    const c3 = background.aurora.color3;
+    const c4 = background.aurora.color4;
+    const c5 = background.aurora.color5 || c2;
+    const base = background.aurora.baseColor || '#0a1013';
+    const smokey = background.smokey || {};
 
     return (
       <SmokeyBackground
@@ -107,8 +109,8 @@ export function BackgroundLayer() {
     );
   }
 
-  if (theme.background.mode !== 'aurora') return null;
-  const base = theme.background.aurora.baseColor || '#07070c';
+  if (background.mode !== 'aurora') return null;
+  const base = background.aurora.baseColor || '#07070c';
 
   return (
     <AuroraBackground
@@ -116,17 +118,17 @@ export function BackgroundLayer() {
       style={
         {
           backgroundColor: base,
-          '--aurora-color-1': theme.background.aurora.color1,
-          '--aurora-color-2': theme.background.aurora.color2,
-          '--aurora-color-3': theme.background.aurora.color3,
-          '--aurora-color-4': theme.background.aurora.color4,
-          '--aurora-color-5': theme.background.aurora.color5 || theme.background.aurora.color2,
+          '--aurora-color-1': background.aurora.color1,
+          '--aurora-color-2': background.aurora.color2,
+          '--aurora-color-3': background.aurora.color3,
+          '--aurora-color-4': background.aurora.color4,
+          '--aurora-color-5': background.aurora.color5 || background.aurora.color2,
           '--aurora-white': base,
           '--aurora-black': base,
           '--aurora-transparent': 'transparent',
-          '--aurora-animation-speed': `${theme.background.aurora.animationSpeed || 20}s`,
-          opacity: theme.background.aurora.opacity,
-          filter: `blur(${theme.background.aurora.blur}px)`,
+          '--aurora-animation-speed': `${background.aurora.animationSpeed || 20}s`,
+          opacity: background.aurora.opacity,
+          filter: `blur(${background.aurora.blur}px)`,
         } as React.CSSProperties
       }
     >

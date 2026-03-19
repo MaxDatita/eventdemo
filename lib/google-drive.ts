@@ -113,20 +113,20 @@ export class GoogleDriveService {
   private invalidateCaches(folderIds: string[] = []) {
     verifyCache.delete(this.folderId);
 
-    for (const [key] of mediaCache) {
+    mediaCache.forEach((_, key) => {
       if (key.includes(this.folderId)) {
         mediaCache.delete(key);
       }
-    }
+    });
 
     for (const folderId of folderIds) {
       if (!folderId) continue;
       verifyCache.delete(folderId);
-      for (const [key] of mediaCache) {
+      mediaCache.forEach((_, key) => {
         if (key.includes(folderId)) {
           mediaCache.delete(key);
         }
-      }
+      });
     }
   }
 
