@@ -87,7 +87,7 @@ export const theme = {
         focus: 'focus:border-purple-600',
       },
     },
-    // Gradientes para círculos de iniciales
+    // Gradientes para círculos de iniciale
     gradients: [
       'from-red-400 to-pink-600',
       'from-orange-400 to-red-600',
