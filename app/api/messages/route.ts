@@ -1,4 +1,11 @@
 import { getMessages } from '@/lib/google-sheets-registros';
+import {
+  formatModerationScoreForSheet,
+  getMessageModerationThreshold,
+  isMessageModerationEnabled,
+  moderateMessageWithOpenAI,
+  resolveModerationDecision,
+} from '@/lib/message-moderation';
 import { NextResponse } from 'next/server';
 import { GoogleSpreadsheet } from 'google-spreadsheet';
 import { JWT } from 'google-auth-library';
@@ -34,7 +41,8 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { nombre, mensaje } = body;
+    const nombre = String(body.nombre || '').trim();
+    const mensaje = String(body.mensaje || '').trim();
 
     if (!nombre || !mensaje) {
       return NextResponse.json(
@@ -80,20 +88,50 @@ export async function POST(request: Request) {
       hour12: false,
     }).format(now);
     const formattedDate = `${datePart} ${timePart}`;
+    let estado: 'pending' | 'approved' | 'rejected' = 'pending';
+    let moderationScore = '';
+    let moderationReason = '';
+    let moderationMode: 'sync' | 'fallback-pending' | 'disabled' = 'disabled';
+
+    if (isMessageModerationEnabled()) {
+      try {
+        const result = await moderateMessageWithOpenAI(nombre, mensaje);
+        const resolved = resolveModerationDecision(result, getMessageModerationThreshold());
+        estado = resolved.decision;
+        moderationScore = formatModerationScoreForSheet(resolved.score);
+        moderationReason = resolved.reason;
+        moderationMode = 'sync';
+      } catch (error) {
+        console.error('Error moderating message during submit. Guardando como pending:', error);
+        moderationMode = 'fallback-pending';
+      }
+    }
+
+    const headers = new Set(sheet.headerValues || []);
+    const rowToInsert: Record<string, string | number> = {
+      id: nextId,
+      Fecha: formattedDate,
+      Nombre: nombre,
+      Mensaje: mensaje,
+      Estado: estado,
+      moderation_score: moderationScore,
+    };
+
+    if (headers.has('moderation_reason')) {
+      rowToInsert.moderation_reason = moderationReason;
+    }
     
     await sheet.addRow(
-      {
-        id: nextId,
-        Fecha: formattedDate,
-        Nombre: String(nombre).trim(),
-        Mensaje: String(mensaje).trim(),
-        Estado: 'pending',
-        moderation_score: '',
-      },
+      rowToInsert,
       { raw: false }
     );
 
-    return NextResponse.json({ success: true, id: nextId });
+    return NextResponse.json({
+      success: true,
+      id: nextId,
+      estado,
+      moderationMode,
+    });
   } catch (error) {
     console.error('Error en POST /api/messages:', error);
     return NextResponse.json(

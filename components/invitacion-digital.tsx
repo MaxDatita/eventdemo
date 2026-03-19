@@ -286,39 +286,41 @@ export function InvitacionDigitalComponent() {
     e.preventDefault();
     if (!newMessage.nombre.trim() || !newMessage.mensaje.trim()) return;
 
+    const payload = {
+      fecha: new Date().toISOString(),
+      nombre: newMessage.nombre.trim(),
+      mensaje: newMessage.mensaje.trim()
+    };
+
     setIsSubmitting(true);
-    try {
-      const payload = {
-        fecha: new Date().toISOString(),
-        nombre: newMessage.nombre.trim(),
-        mensaje: newMessage.mensaje.trim()
-      };
+    setNewMessage({ nombre: '', mensaje: '' });
+    setIsMessageDialogOpen(false);
+    toast.success('Tu mensaje pasó a revisión.');
+    setIsSubmitting(false);
 
-      const response = await fetch('/api/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
+    void (async () => {
+      try {
+        const response = await fetch('/api/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        });
 
-      if (!response.ok) {
-        const errorPayload = await response.json().catch(() => ({}));
-        const detail = errorPayload?.error || `Error ${response.status}`;
-        throw new Error(detail);
+        if (!response.ok) {
+          const errorPayload = await response.json().catch(() => ({}));
+          const detail = errorPayload?.error || `Error ${response.status}`;
+          throw new Error(detail);
+        }
+
+        await fetchSheetMessages();
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Error al enviar el mensaje';
+        console.error('Error:', error);
+        toast.error(`No pudimos registrar tu mensaje. ${message}`);
       }
-      
-      toast.success('¡Mensaje enviado!');
-      setNewMessage({ nombre: '', mensaje: '' });
-      setIsMessageDialogOpen(false);
-      await fetchSheetMessages();
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Error al enviar el mensaje';
-      console.error('Error:', error);
-      toast.error(message);
-    } finally {
-      setIsSubmitting(false);
-    }
+    })();
   };
 
   // DEMO: Simular disponibilidad de tickets

@@ -1,9 +1,0 @@
-{
-  "crons": [
-    {
-      "path": "/api/messages/moderate-cron",
-      "schedule": "*/2 * * * *"
-    }
-  ]
-}
-
