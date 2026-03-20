@@ -242,7 +242,7 @@ function ModerationContent() {
   };
 
   const getDisplayPhotoName = (name: string) =>
-    name.replace(/\.[^.]+$/u, '');
+    name.replace(/\.[^.]+$/, '');
 
   const renderPhotoCard = (photo: Photo, isApproved: boolean = false, isRejected: boolean = false) => (
     <Card 
