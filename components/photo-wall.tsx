@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogPortal } from './ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogPortal, DialogOverlay } from './ui/dialog';
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { useDemoDates } from '@/contexts/DemoContext';
 import { demoPhotos, PhotoWallPost } from '@/data/demo-photos';
@@ -158,10 +158,9 @@ export function PhotoWall({ isOpen, onClose, source = 'guest' }: PhotoWallProps)
 
   return (
     <>
-      <Dialog open={isOpen} onOpenChange={handleOpenChange} modal={false}>
+      <Dialog open={isOpen} onOpenChange={handleOpenChange} modal={true}>
         <DialogPortal>
-          <div className="z-[100]">
-          {/* No incluir DialogOverlay aquí para evitar doble overlay */}
+          <DialogOverlay className="z-40 bg-black/80" />
           <DialogPrimitive.Content
             onInteractOutside={(e) => e.preventDefault()}
             onEscapeKeyDown={(e) => {
@@ -339,7 +338,6 @@ export function PhotoWall({ isOpen, onClose, source = 'guest' }: PhotoWallProps)
           )}
           </div>
           </DialogPrimitive.Content>
-          </div>
         </DialogPortal>
       </Dialog>
 

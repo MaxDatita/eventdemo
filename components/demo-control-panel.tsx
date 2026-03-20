@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Settings, Play, RotateCcw, Moon, Sun, Shield, LayoutDashboard, MessageSquare, Ticket, Users, MonitorPlay } from 'lucide-react'
+import { Settings, Play, RotateCcw, Moon, Sun, Shield, LayoutDashboard, MessageSquare, Ticket, Users, MonitorPlay, Heart } from 'lucide-react'
 import { useDemoDates } from '@/contexts/DemoContext'
 import { toast } from 'sonner'
 import { demoFeatures } from '@/config/feature-flags'
@@ -95,6 +95,11 @@ export function DemoControlPanel() {
       ? '/proyeccion?demo=true&password=admin123'
       : '/proyeccion'
     window.open(url, '_blank')
+    togglePanel()
+  }
+
+  const handleNavigateToMemories = () => {
+    window.open('https://memories.eventechy.com', '_blank', 'noopener,noreferrer')
     togglePanel()
   }
 
@@ -202,6 +207,21 @@ export function DemoControlPanel() {
                   >
                     <MonitorPlay className="mr-2 h-4 w-4" />
                     Vista de Fotos
+                  </Button>
+                </div>
+              </div>
+
+              <div className="border-t border-gray-300 dark:border-gray-700 pt-3 mt-2">
+                <h3 className={`text-sm font-semibold mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  Recuerdos del Evento
+                </h3>
+                <div className="flex flex-col gap-2">
+                  <Button
+                    onClick={handleNavigateToMemories}
+                    className="w-full flex items-center justify-center bg-[#FFCF6E] hover:bg-[#F5C55E] text-black"
+                  >
+                    <Heart className="mr-2 h-4 w-4" />
+                    Ver Recuerdos
                   </Button>
                 </div>
               </div>

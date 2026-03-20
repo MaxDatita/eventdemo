@@ -233,7 +233,6 @@ export default function InvitadosPage() {
 
   return (
     <>
-      <div className="bg-gradient-animation" />
       <div className="pt-6 pb-6 pl-6 pr-6 flex flex-col items-center relative z-10">
         <div className="w-full max-w-3xl mt-12 flex flex-col">
           <div className="title-image-container mb-2">

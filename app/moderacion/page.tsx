@@ -241,6 +241,9 @@ function ModerationContent() {
     }
   };
 
+  const getDisplayPhotoName = (name: string) =>
+    name.replace(/\.[^.]+$/u, '');
+
   const renderPhotoCard = (photo: Photo, isApproved: boolean = false, isRejected: boolean = false) => (
     <Card 
       key={photo.id} 
@@ -267,7 +270,7 @@ function ModerationContent() {
         <div className="flex-1 space-y-1">
           <div>
             <h3 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-              {photo.username}
+              {getDisplayPhotoName(photo.username)}
             </h3>
             <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
               {new Date(photo.timestamp).toLocaleString('es-ES')}
@@ -325,45 +328,48 @@ function ModerationContent() {
             <span className="text-xs font-bold text-white">MODO DEMO</span>
           </div>
         </div>
-        <div className="fixed bottom-3 left-0 right-0 flex justify-center z-50">
-          <a 
-            href="https://eventechy.com" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="hover:opacity-80 transition-opacity"
-          >
-            <Image
-              src={isBackgroundDark() ? '/logo-fondo-oscuro.png' : '/logo-fondo-claro.png'}
-              alt="Eventechy"
-              width={155}
-              height={55}
-              className="rounded-lg"
-            />
-          </a>
-        </div>
-        <div className="content-container flex items-center justify-center">
-          <Card className="w-full max-w-md rounded-xl border-2 border-t-4 border-[#FF914E] border-t-[#FFCF6E] shadow-lg bg-white p-8">
-            <div className="text-center space-y-4">
-              <div className="w-16 h-16 bg-[#FF914E] rounded-full flex items-center justify-center mx-auto">
-                <Lock className="h-8 w-8 text-white" />
+        <div className="content-container pt-16 flex flex-col">
+          <div className="flex-1 flex items-center justify-center">
+            <Card className="w-full max-w-md rounded-xl border-2 border-t-4 border-[#FF914E] border-t-[#FFCF6E] shadow-lg bg-white p-8">
+              <div className="text-center space-y-4">
+                <div className="w-16 h-16 bg-[#FF914E] rounded-full flex items-center justify-center mx-auto">
+                  <Lock className="h-8 w-8 text-white" />
+                </div>
+                <h1 className="text-2xl font-bold text-gray-900 font-secondary">Panel de Moderación</h1>
+                <p className="text-gray-700">Ingresa la contraseña para acceder <br/><span className="text-sm text-gray-500">(admin123)</span></p>
+                <Input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Contraseña"
+                  onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
+                />
+                <Button
+                  onClick={handleLogin}
+                  className="w-full bg-[#FFCF6E] hover:bg-[#FFCF6E]/90 text-gray-800 border-2 border-gray-700"
+                >
+                  Acceder
+                </Button>
               </div>
-              <h1 className="text-2xl font-bold text-gray-900 font-secondary">Panel de Moderación</h1>
-              <p className="text-gray-700">Ingresa la contraseña para acceder <br/><span className="text-sm text-gray-500">(admin123)</span></p>
-              <Input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Contraseña"
-                onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
+            </Card>
+          </div>
+
+          <div className="flex justify-center mt-8 mb-3">
+            <a 
+              href="https://eventechy.com" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="hover:opacity-80 transition-opacity"
+            >
+              <Image
+                src={isBackgroundDark() ? '/logo-fondo-oscuro.png' : '/logo-fondo-claro.png'}
+                alt="Eventechy"
+                width={155}
+                height={55}
+                className="rounded-lg"
               />
-              <Button
-                onClick={handleLogin}
-                className="w-full bg-[#FFCF6E] hover:bg-[#FFCF6E]/90 text-gray-800 border-2 border-gray-700"
-              >
-                Acceder
-              </Button>
-            </div>
-          </Card>
+            </a>
+          </div>
         </div>
       </>
     );
@@ -385,23 +391,23 @@ function ModerationContent() {
         {/* Sección con texto: fondo blanco y colores de la marca (#FFCF6E, #FF914E) */}
         <div className="bg-white rounded-xl shadow-md p-6 mb-6 border-2 border-[#FF914E] border-t-4 border-t-[#FFCF6E]">
           <div className="flex items-center justify-between mb-6">
-            <h1 className="text-xl font-semibold text-center font-secondary text-gray-900">
+            <h1 className="text-xl font-semibold text-left font-secondary text-gray-900">
               Panel de Moderación
             </h1>
             <Button 
               variant="secondary" 
               onClick={() => setIsAuthenticated(false)}
-              className="border-2 border-gray-700 text-gray-800 bg-[#FFCF6E] hover:bg-[#FFCF6E]/90 transition-colors"
+              className="border-2 border-gray-700 text-gray-800 bg-[#FFCF6E] hover:bg-[#FFCF6E]/90 transition-colors whitespace-nowrap"
             >
               Cerrar Sesión
             </Button>
           </div>
 
-          {/* Tabs - activo con color de marca */}
-          <div className="flex gap-4 border-b border-gray-200">
+          {/* Tabs responsive: en mobile no se desbordan */}
+          <div className="grid grid-cols-3 gap-1 sm:gap-2 border-b border-gray-200">
             <button
               onClick={() => setActiveTab('pending')}
-              className={`pb-3 px-4 font-semibold transition-colors ${
+              className={`pb-3 px-2 sm:px-4 text-xs sm:text-sm font-semibold transition-colors whitespace-nowrap text-center ${
                 activeTab === 'pending'
                   ? 'text-[#FF914E] border-b-2 border-[#FF914E]'
                   : 'text-gray-600 hover:text-[#FF914E]/80'
@@ -411,7 +417,7 @@ function ModerationContent() {
             </button>
             <button
               onClick={() => setActiveTab('approved')}
-              className={`pb-3 px-4 font-semibold transition-colors ${
+              className={`pb-3 px-2 sm:px-4 text-xs sm:text-sm font-semibold transition-colors whitespace-nowrap text-center ${
                 activeTab === 'approved'
                   ? 'text-[#FF914E] border-b-2 border-[#FF914E]'
                   : 'text-gray-600 hover:text-[#FF914E]/80'
@@ -421,7 +427,7 @@ function ModerationContent() {
             </button>
             <button
               onClick={() => setActiveTab('rejected')}
-              className={`pb-3 px-4 font-semibold transition-colors ${
+              className={`pb-3 px-2 sm:px-4 text-xs sm:text-sm font-semibold transition-colors whitespace-nowrap text-center ${
                 activeTab === 'rejected'
                   ? 'text-[#FF914E] border-b-2 border-[#FF914E]'
                   : 'text-gray-600 hover:text-[#FF914E]/80'
@@ -463,24 +469,23 @@ function ModerationContent() {
           </>
         )}
 
-      </div>
-
-      {/* Logo según colores predominantes del fondo (no dark mode), anclado abajo */}
-      <div className="fixed bottom-3 left-0 right-0 flex justify-center z-10 pointer-events-none">
-        <a
-          href="https://eventechy.com"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="pointer-events-auto hover:opacity-80 transition-opacity"
-        >
-          <Image
-            src={isBackgroundDark() ? '/logo-fondo-oscuro.png' : '/logo-fondo-claro.png'}
-            alt="Eventechy"
-            width={155}
-            height={55}
-            className="rounded-lg"
-          />
-        </a>
+        {/* Logo al final real del contenido/lista (sin superposición) */}
+        <div className="flex justify-center mt-8 mb-3">
+          <a
+            href="https://eventechy.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:opacity-80 transition-opacity"
+          >
+            <Image
+              src={isBackgroundDark() ? '/logo-fondo-oscuro.png' : '/logo-fondo-claro.png'}
+              alt="Eventechy"
+              width={155}
+              height={55}
+              className="rounded-lg"
+            />
+          </a>
+        </div>
       </div>
 
       {/* Modal para ver foto grande */}

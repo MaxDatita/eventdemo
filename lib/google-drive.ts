@@ -859,8 +859,8 @@ export function getVideoThumbnailUrl(fileId: string, size: 'small' | 'medium' | 
   return `https://drive.google.com/thumbnail?id=${fileId}&sz=${sizeMap[size]}`;
 }
 
-// Instancia singleton con manejo de errores
-let googleDriveServiceInstance: GoogleDriveService | null = null;
+// Cache de instancias por carpeta para evitar mezclar eventos distintos.
+const googleDriveServiceInstances = new Map<string, GoogleDriveService>();
 
 export function getGoogleDriveService(): GoogleDriveService | null {
   // Solo inicializar si las variables de entorno están configuradas
@@ -875,15 +875,18 @@ export function getGoogleDriveService(): GoogleDriveService | null {
     return null;
   }
 
-  if (!googleDriveServiceInstance) {
+  const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID!;
+
+  if (!googleDriveServiceInstances.has(folderId)) {
     try {
-      googleDriveServiceInstance = new GoogleDriveService();
+      googleDriveServiceInstances.set(folderId, new GoogleDriveService(folderId));
     } catch (error) {
       console.error('Error inicializando GoogleDriveService:', error);
       return null;
     }
   }
-  return googleDriveServiceInstance;
+
+  return googleDriveServiceInstances.get(folderId) || null;
 }
 
 export function getGoogleDriveServiceForFolder(folderId: string): GoogleDriveService | null {
@@ -897,12 +900,16 @@ export function getGoogleDriveServiceForFolder(folderId: string): GoogleDriveSer
     return null;
   }
 
-  try {
-    return new GoogleDriveService(folderId);
-  } catch (error) {
-    console.error('Error inicializando GoogleDriveService para carpeta específica:', error);
-    return null;
+  if (!googleDriveServiceInstances.has(folderId)) {
+    try {
+      googleDriveServiceInstances.set(folderId, new GoogleDriveService(folderId));
+    } catch (error) {
+      console.error('Error inicializando GoogleDriveService para carpeta específica:', error);
+      return null;
+    }
   }
+
+  return googleDriveServiceInstances.get(folderId) || null;
 }
 
 export function isGoogleDriveConfigured(): boolean {

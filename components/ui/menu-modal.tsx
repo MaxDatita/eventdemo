@@ -377,38 +377,48 @@ export function MenuModal({
 
         {isInformative ? (
           <>
-            <div className="flex space-x-2 mb-4">
-              <Button
-                variant="invitation"
-                className={`flex-1 ${informativeTab !== 'menu' ? 'bg-[var(--color-primary)]/20 hover:bg-[var(--color-primary)]/30 text-[var(--color-primary)] border border-[var(--color-primary)]/40' : ''}`}
-                onClick={() => setInformativeTab('menu')}
-              >
-                Menú de la noche
-              </Button>
-              <Button
-                variant="invitation"
-                className={`flex-1 ${informativeTab !== 'anexos' ? 'bg-[var(--color-primary)]/20 hover:bg-[var(--color-primary)]/30 text-[var(--color-primary)] border border-[var(--color-primary)]/40' : ''}`}
-                onClick={() => setInformativeTab('anexos')}
-              >
-                Consumos anexos
-              </Button>
-            </div>
-            <div className="overflow-y-auto flex-1 pr-2">
-              {informativeTab === 'menu' && (
-                <div className="space-y-4">
-                  {informativeData.menuDeLaNoche.map((section, i) => (
-                    <InformativeSection key={i} section={section} isDarkMode={isDarkMode} />
-                  ))}
+            {isContentActive ? (
+              <>
+                <div className="flex space-x-2 mb-4">
+                  <Button
+                    variant="invitation"
+                    className={`flex-1 ${informativeTab !== 'menu' ? 'bg-[var(--color-primary)]/20 hover:bg-[var(--color-primary)]/30 text-[var(--color-primary)] border border-[var(--color-primary)]/40' : ''}`}
+                    onClick={() => setInformativeTab('menu')}
+                  >
+                    Menú de la noche
+                  </Button>
+                  <Button
+                    variant="invitation"
+                    className={`flex-1 ${informativeTab !== 'anexos' ? 'bg-[var(--color-primary)]/20 hover:bg-[var(--color-primary)]/30 text-[var(--color-primary)] border border-[var(--color-primary)]/40' : ''}`}
+                    onClick={() => setInformativeTab('anexos')}
+                  >
+                    Consumos anexos
+                  </Button>
                 </div>
-              )}
-              {informativeTab === 'anexos' && (
-                <div className="space-y-4">
-                  {informativeData.consumosAnexos.map((anexo, i) => (
-                    <AnexoBlock key={i} anexo={anexo} isDarkMode={isDarkMode} />
-                  ))}
+                <div className="overflow-y-auto flex-1 pr-2">
+                  {informativeTab === 'menu' && (
+                    <div className="space-y-4">
+                      {informativeData.menuDeLaNoche.map((section, i) => (
+                        <InformativeSection key={i} section={section} isDarkMode={isDarkMode} />
+                      ))}
+                    </div>
+                  )}
+                  {informativeTab === 'anexos' && (
+                    <div className="space-y-4">
+                      {informativeData.consumosAnexos.map((anexo, i) => (
+                        <AnexoBlock key={i} anexo={anexo} isDarkMode={isDarkMode} />
+                      ))}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+              </>
+            ) : (
+              <div className="flex items-center justify-center flex-1 text-center p-4">
+                <p className="text-muted-foreground">
+                  El menú estará disponible más cerca de la fecha del evento.
+                </p>
+              </div>
+            )}
           </>
         ) : (
           <>

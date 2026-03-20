@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
       return {
         id: drivePhoto.id,
         url: imageUrl,
-        thumbnailUrl: drivePhoto.thumbnailLink || imageUrl,
+        thumbnailUrl: `/api/photos/thumbnail?id=${drivePhoto.id}`,
         fullUrl: imageUrl,
         username: username,
         timestamp: drivePhoto.createdTime,
