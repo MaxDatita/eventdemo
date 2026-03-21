@@ -49,6 +49,11 @@
     background: transparent !important;
   }
 
+  html.route-invitados,
+  body.route-invitados {
+    background-attachment: scroll !important;
+  }
+
   /* Font families */
   .font-primary {
     font-family: 'Roboto', sans-serif;
@@ -98,6 +103,13 @@
   /* Legacy background layer desactivada: se mantiene en el DOM pero no pinta */
   .bg-gradient-animation {
     display: none !important;
+  }
+
+  body.route-invitados [data-app-background-layer] {
+    position: absolute !important;
+    inset: 0 !important;
+    height: 100% !important;
+    min-height: 100% !important;
   }
 
   html.theme-bg-aurora .bg-gradient-animation,

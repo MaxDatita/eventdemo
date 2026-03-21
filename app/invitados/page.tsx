@@ -52,6 +52,16 @@ export default function InvitadosPage() {
   }, [])
 
   useEffect(() => {
+    document.documentElement.classList.add('route-invitados')
+    document.body.classList.add('route-invitados')
+
+    return () => {
+      document.documentElement.classList.remove('route-invitados')
+      document.body.classList.remove('route-invitados')
+    }
+  }, [])
+
+  useEffect(() => {
     if (!isAuthenticated || !password) return
 
     let alive = true

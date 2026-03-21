@@ -33,19 +33,24 @@ export async function PUT(request: NextRequest) {
       });
     }
 
+    let targetFolderId: string | undefined;
+
     if (action === 'approve') {
       // Mover foto a carpeta de aprobadas
       const approvedFolderId = await googleDriveService.getOrCreateApprovedFolder();
+      targetFolderId = approvedFolderId;
       await googleDriveService.moveFile(photoId, approvedFolderId);
     } else if (action === 'reject') {
       // Mover foto a carpeta de rechazadas
       const rejectedFolderId = await googleDriveService.getOrCreateRejectedFolder();
+      targetFolderId = rejectedFolderId;
       await googleDriveService.moveFile(photoId, rejectedFolderId);
     }
 
     return NextResponse.json({ 
       success: true, 
-      message: action === 'approve' ? 'Foto aprobada' : 'Foto rechazada'
+      message: action === 'approve' ? 'Foto aprobada' : 'Foto rechazada',
+      targetFolderId,
     });
 
   } catch (error) {

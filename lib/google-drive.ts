@@ -145,7 +145,7 @@ export class GoogleDriveService {
       try {
         // Buscar carpeta existente
         const response = await getDriveClient().files.list({
-          q: `'${this.folderId}' in parents and name='aprobadas' and mimeType='application/vnd.google-apps.folder'`,
+          q: `'${this.folderId}' in parents and name='aprobadas' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
           fields: 'files(id,name)',
           supportsAllDrives: true,
           includeItemsFromAllDrives: true,
@@ -210,7 +210,7 @@ export class GoogleDriveService {
     try {
       // Buscar carpeta existente
       const response = await getDriveClient().files.list({
-        q: `'${this.folderId}' in parents and name='previa' and mimeType='application/vnd.google-apps.folder'`,
+        q: `'${this.folderId}' in parents and name='previa' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
         fields: 'files(id,name)',
         supportsAllDrives: true,
         includeItemsFromAllDrives: true,
@@ -247,7 +247,7 @@ export class GoogleDriveService {
       try {
         // Buscar carpeta existente
         const response = await getDriveClient().files.list({
-          q: `'${this.folderId}' in parents and name='rechazadas' and mimeType='application/vnd.google-apps.folder'`,
+          q: `'${this.folderId}' in parents and name='rechazadas' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
           fields: 'files(id,name)',
           supportsAllDrives: true,
           includeItemsFromAllDrives: true,

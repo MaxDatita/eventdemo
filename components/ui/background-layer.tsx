@@ -12,7 +12,7 @@ export function BackgroundLayer() {
     const g = background.grainient ?? {};
 
     return (
-      <div className="fixed inset-0 z-0 pointer-events-none">
+      <div data-app-background-layer className="fixed inset-0 z-0 pointer-events-none">
         <div className="w-full h-full relative">
           <Grainient
             color1={g.color1 ?? '#04724d'}
@@ -47,6 +47,7 @@ export function BackgroundLayer() {
     const gradient = background.gradient;
     return (
       <div
+        data-app-background-layer
         className="fixed inset-0 z-0 pointer-events-none"
         style={{
           background: `linear-gradient(140deg, ${gradient.color1} 0%, ${gradient.color2} 55%, ${gradient.color3} 100%)`,
@@ -74,6 +75,7 @@ export function BackgroundLayer() {
 
     return (
       <BokehBackground
+        data-app-background-layer
         className="fixed inset-0 z-0 pointer-events-none"
         count={bokeh.count || 24}
         minSize={bokeh.minSize || 60}
@@ -98,6 +100,7 @@ export function BackgroundLayer() {
 
     return (
       <SmokeyBackground
+        data-app-background-layer
         className="fixed inset-0 z-0 pointer-events-none"
         colors={[c1, c2, c3, c4, c5]}
         baseColor={base}
@@ -114,6 +117,7 @@ export function BackgroundLayer() {
 
   return (
     <AuroraBackground
+      data-app-background-layer
       className="fixed inset-0 z-0 pointer-events-none !h-[100dvh] !bg-transparent dark:!bg-transparent"
       style={
         {
