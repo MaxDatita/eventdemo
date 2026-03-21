@@ -205,14 +205,14 @@ export default function InvitadosPage() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen pt-6 pb-6 pl-6 pr-6 flex items-center justify-center">
+      <div className="min-h-screen pt-6 pb-6 pl-6 pr-6 flex flex-col items-center justify-center">
         <Card className="w-full max-w-md rounded-xl border-2 border-t-4 border-[#FF914E] border-t-[#FFCF6E] shadow-lg bg-white p-8">
           <div className="text-center space-y-4">
             <div className="w-16 h-16 bg-[#FF914E] rounded-full flex items-center justify-center mx-auto">
               <Lock className="h-8 w-8 text-white" />
             </div>
             <h1 className="text-2xl font-bold text-gray-900 font-secondary">Control de Ingresos</h1>
-            <p className="text-gray-700">Ingresa la contraseña para acceder</p>
+            <p className="text-gray-700">Ingresa la contraseña para acceder <br/>(Contraseña Demo: admin123)</p>
             <Input
               type="password"
               value={password}
@@ -237,6 +237,20 @@ export default function InvitadosPage() {
             {authError && <p className="text-sm text-red-600">{authError}</p>}
           </div>
         </Card>
+        <a
+          href="https://eventechy.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-6 inline-block hover:opacity-80 transition-opacity leading-[0]"
+        >
+          <Image
+            src={backgroundIsDark ? '/logo-fondo-oscuro.png' : '/logo-fondo-claro.png'}
+            alt="Eventechy"
+            width={155}
+            height={55}
+            className="rounded-lg"
+          />
+        </a>
       </div>
     )
   }
