@@ -125,6 +125,8 @@ export const theme = {
   dates: {
     event: '2026-10-18T22:30:00', // Fecha del evento
     contentActivation: '2026-10-01T00:00:00', // Fecha de activación del contenido
+    menuActivation: '', // Fecha de activación de Menú (vacía = usa contentActivation)
+    messagesActivation: '', // Fecha de activación de Mensajes (vacía = usa contentActivation)
     rsvpDeadline: '2026-02-17T00:00:00', // Fecha límite para venta de tickets
     liveEnd: '2026-10-19T06:59:59', // Fecha en que desaparece el indicador LIVE
   },

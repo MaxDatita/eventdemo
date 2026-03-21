@@ -140,6 +140,11 @@ export function InvitacionDigitalComponent() {
   const contentActivationDate = useMemo(() => {
     return isDemoMode ? new Date(demoDates.contentActivation) : new Date(theme.dates.contentActivation);
   }, [demoDates.contentActivation, isDemoMode]);
+  const messagesActivationDate = useMemo(() => {
+    const configuredMessagesActivation = theme.dates.messagesActivation?.trim();
+    const messagesActivationSource = configuredMessagesActivation || theme.dates.contentActivation;
+    return isDemoMode ? new Date(demoDates.contentActivation) : new Date(messagesActivationSource);
+  }, [demoDates.contentActivation, isDemoMode]);
   const liveEndDate = useMemo(() => {
     return isDemoMode ? new Date(demoDates.liveEnd) : new Date(theme.dates.liveEnd);
   }, [demoDates.liveEnd, isDemoMode]);
@@ -220,7 +225,7 @@ export function InvitacionDigitalComponent() {
         }
       }
 
-      if (difference <= 0) {
+      if (!isDemoMode && difference <= 0) {
         setEventStarted(true)
         setShowUpdateButton(true)
         clearInterval(interval)
@@ -270,6 +275,7 @@ export function InvitacionDigitalComponent() {
   }, [eventStarted, carouselMessages.length])
 
   const isContentActive = isDemoMode ? isEventLive : (currentDate >= contentActivationDate)
+  const isMessagesActive = isDemoMode ? isEventLive : (currentDate >= messagesActivationDate)
   const heroGradientConfig = theme.resources.heroGradientText
   const heroGradientPhrase = eventStarted
     ? heroGradientConfig?.afterCountdownEnds || 'El evento ya comenzo'
@@ -675,7 +681,7 @@ export function InvitacionDigitalComponent() {
                   <DialogTitle className={`text-center font-semibold ${isDarkMode ? 'text-white' : 'text-[var(--color-primary)]'}`}>Deja un mensaje</DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmitMessage} className="grid gap-4 py-4">
-                  {isContentActive ? (
+                  {isMessagesActive ? (
                     <>
                       <Input 
                         id="name" 
@@ -735,7 +741,7 @@ export function InvitacionDigitalComponent() {
                   </DialogContent>
                 </Dialog>
 
-                {/* Determinar qué botones mostrar según la configuración */}
+                Determinar qué botones mostrar según la configuración
                 {(() => {
                   // En modo demo, usar el modo del contexto; si no, usar el del theme
                   const buttonMode = isDemoMode ? rsvpMode : theme.rsvpButton.mode;

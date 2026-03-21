@@ -350,8 +350,10 @@ export function MenuModal({
   const [informativeTab, setInformativeTab] = useState<'menu' | 'anexos'>('menu')
 
   const { isDemoMode, isEventLive, isDarkMode, demoDates } = useDemoDates()
-  const contentActivationDate = isDemoMode ? new Date(demoDates.contentActivation) : new Date(theme.dates.contentActivation)
-  const isContentActive = isDemoMode ? isEventLive : (new Date() >= contentActivationDate)
+  const configuredMenuActivation = theme.dates.menuActivation?.trim()
+  const menuActivationSource = configuredMenuActivation || theme.dates.contentActivation
+  const menuActivationDate = isDemoMode ? new Date(demoDates.contentActivation) : new Date(menuActivationSource)
+  const isMenuActive = isDemoMode ? isEventLive : (new Date() >= menuActivationDate)
 
   const getModalTitle = () => {
     if (isInformative) return "Menú del evento"
@@ -377,7 +379,7 @@ export function MenuModal({
 
         {isInformative ? (
           <>
-            {isContentActive ? (
+            {isMenuActive ? (
               <>
                 <div className="flex space-x-2 mb-4">
                   <Button
@@ -422,7 +424,7 @@ export function MenuModal({
           </>
         ) : (
           <>
-            {isContentActive ? (
+            {isMenuActive ? (
               <>
                 {hasBebidas && hasComidas && (
                   <div className="flex space-x-2 mb-4">
