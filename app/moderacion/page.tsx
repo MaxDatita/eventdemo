@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useCallback, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -24,8 +23,7 @@ interface Photo {
 type TabType = 'pending' | 'approved' | 'rejected';
 
 function ModerationContent() {
-  const searchParams = useSearchParams();
-  const { isDarkMode, isDemoMode } = useDemoDates();
+  const { isDarkMode } = useDemoDates();
   const [password, setPassword] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('pending');
@@ -36,23 +34,51 @@ function ModerationContent() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
 
-  const handleLogin = () => {
-    if (password === 'admin123') {
+  const handleLogin = async () => {
+    const trimmed = password.trim();
+    if (!trimmed) {
+      alert('Ingresá una contraseña');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/photos/pending', {
+        cache: 'no-store',
+        headers: {
+          'x-moderation-password': trimmed,
+        },
+      });
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Contraseña incorrecta');
+      }
+
+      setPassword(trimmed);
       setIsAuthenticated(true);
-      fetchPendingPhotos();
-      fetchApprovedPhotos();
-      fetchRejectedPhotos();
-    } else {
-      alert('Contraseña incorrecta');
+      setPendingPhotos(result.photos || []);
+      void fetchApprovedPhotos(trimmed);
+      void fetchRejectedPhotos(trimmed);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Contraseña incorrecta');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const fetchPendingPhotos = useCallback(async (silent = false) => {
+  const fetchPendingPhotos = useCallback(async (silent = false, currentPassword?: string) => {
     if (!isAuthenticated) return;
+    const effectivePassword = (currentPassword ?? password).trim();
+    if (!effectivePassword) return;
     
     if (!silent) setIsLoading(true);
     try {
-      const response = await fetch(`/api/photos/pending?password=${encodeURIComponent(password || 'admin123')}`);
+      const response = await fetch('/api/photos/pending', {
+        headers: {
+          'x-moderation-password': effectivePassword,
+        },
+      });
       const result = await response.json();
       
       if (response.ok && result.photos) {
@@ -81,11 +107,17 @@ function ModerationContent() {
     }
   }, [isAuthenticated, password]);
 
-  const fetchApprovedPhotos = useCallback(async () => {
+  const fetchApprovedPhotos = useCallback(async (currentPassword?: string) => {
     if (!isAuthenticated) return;
+    const effectivePassword = (currentPassword ?? password).trim();
+    if (!effectivePassword) return;
     
     try {
-      const response = await fetch(`/api/photos/all?password=${encodeURIComponent(password || 'admin123')}`);
+      const response = await fetch('/api/photos/all', {
+        headers: {
+          'x-moderation-password': effectivePassword,
+        },
+      });
       const result = await response.json();
       
       if (response.ok && result.photos) {
@@ -96,11 +128,17 @@ function ModerationContent() {
     }
   }, [isAuthenticated, password]);
 
-  const fetchRejectedPhotos = useCallback(async () => {
+  const fetchRejectedPhotos = useCallback(async (currentPassword?: string) => {
     if (!isAuthenticated) return;
+    const effectivePassword = (currentPassword ?? password).trim();
+    if (!effectivePassword) return;
     
     try {
-      const response = await fetch(`/api/photos/rejected?password=${encodeURIComponent(password || 'admin123')}`);
+      const response = await fetch('/api/photos/rejected', {
+        headers: {
+          'x-moderation-password': effectivePassword,
+        },
+      });
       const result = await response.json();
       
       if (response.ok && result.photos) {
@@ -110,23 +148,6 @@ function ModerationContent() {
       console.error('Error fetching rejected photos:', error);
     }
   }, [isAuthenticated, password]);
-
-  // Auto-autenticar si viene la contraseña en query params (modo demo)
-  useEffect(() => {
-    const demoParam = searchParams.get('demo');
-    const passwordParam = searchParams.get('password');
-    
-    if (demoParam === 'true' && passwordParam === 'admin123' && !isAuthenticated) {
-      setPassword(passwordParam);
-      setIsAuthenticated(true);
-      // Ejecutar las funciones fetch después de autenticar
-      setTimeout(() => {
-        fetchPendingPhotos();
-        fetchApprovedPhotos();
-        fetchRejectedPhotos();
-      }, 100);
-    }
-  }, [searchParams, isAuthenticated, fetchPendingPhotos, fetchApprovedPhotos, fetchRejectedPhotos]);
 
   // Auto-refresh cada 10 segundos cuando está autenticado
   // ⚙️ CONFIGURACIÓN: Cambia el valor 10000 (milisegundos) para ajustar el intervalo de actualización
@@ -162,7 +183,7 @@ function ModerationContent() {
         body: JSON.stringify({
           photoId,
           action,
-          password: 'admin123'
+          password
         }),
       });
 
@@ -216,7 +237,7 @@ function ModerationContent() {
         body: JSON.stringify({
           photoId: photo.id,
           action: 'approve',
-          password: 'admin123'
+          password
         }),
       });
 
@@ -336,16 +357,17 @@ function ModerationContent() {
                   <Lock className="h-8 w-8 text-white" />
                 </div>
                 <h1 className="text-2xl font-bold text-gray-900 font-secondary">Panel de Moderación</h1>
-                <p className="text-gray-700">Ingresa la contraseña para acceder <br/><span className="text-sm text-gray-500">(admin123)</span></p>
+                <p className="text-gray-700">Ingresa la contraseña para acceder.</p>
                 <Input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Contraseña"
-                  onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
+                  onKeyPress={(e) => e.key === 'Enter' && void handleLogin()}
                 />
                 <Button
-                  onClick={handleLogin}
+                  onClick={() => void handleLogin()}
+                  disabled={isLoading}
                   className="w-full bg-[#FFCF6E] hover:bg-[#FFCF6E]/90 text-gray-800 border-2 border-gray-700"
                 >
                   Acceder

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { generateDashboardData } from '@/lib/mock-data';
+import { isDemoAdminPasswordValid } from '@/lib/demo-admin-auth';
 
 export async function POST(request: Request) {
   try {
@@ -7,7 +8,7 @@ export async function POST(request: Request) {
     const { password, format } = body;
 
     // Verificar contraseña
-    if (password !== 'admin123') {
+    if (!isDemoAdminPasswordValid(password)) {
       return NextResponse.json(
         { error: 'Contraseña incorrecta' },
         { status: 401 }
@@ -81,6 +82,5 @@ export async function POST(request: Request) {
     );
   }
 }
-
 
 

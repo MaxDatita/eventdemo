@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import type { CSSProperties } from "react";
+import { Analytics } from "@vercel/analytics/react";
 import { Toaster } from "sonner";
 import "./globals.css";
 import Providers from './providers'
@@ -104,6 +105,7 @@ export default function RootLayout({
           <Providers>
             {children}
             <Toaster />
+            <Analytics />
           </Providers>
         </div>
       </body>

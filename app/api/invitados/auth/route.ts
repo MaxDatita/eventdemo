@@ -1,5 +1,33 @@
 import { NextResponse } from 'next/server';
-import { getInvitadosPassword } from '@/lib/invitados-auth';
+import {
+  createInvitadosSessionToken,
+  getInvitadosPassword,
+  getInvitadosSessionCookieName,
+  getInvitadosSessionMaxAge,
+  isInvitadosSessionValid,
+} from '@/lib/invitados-auth';
+
+function buildExpiredSessionResponse() {
+  const response = NextResponse.json({ success: true });
+  response.cookies.set({
+    name: getInvitadosSessionCookieName(),
+    value: '',
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    path: '/',
+    maxAge: 0,
+  });
+  return response;
+}
+
+export async function GET(request: Request) {
+  if (!isInvitadosSessionValid(request)) {
+    return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
+  }
+
+  return NextResponse.json({ success: true });
+}
 
 export async function POST(request: Request) {
   try {
@@ -12,8 +40,23 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Contraseña incorrecta' }, { status: 401 });
     }
 
-    return NextResponse.json({ success: true });
+    const response = NextResponse.json({ success: true });
+    response.cookies.set({
+      name: getInvitadosSessionCookieName(),
+      value: createInvitadosSessionToken(),
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      path: '/',
+      maxAge: getInvitadosSessionMaxAge(),
+    });
+
+    return response;
   } catch {
     return NextResponse.json({ error: 'Error del servidor' }, { status: 500 });
   }
+}
+
+export async function DELETE() {
+  return buildExpiredSessionResponse();
 }

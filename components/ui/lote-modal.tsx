@@ -17,6 +17,7 @@ interface LoteModalProps {
   open: boolean
   onClose: () => void
   onSave: () => void
+  password: string
   lote?: {
     currentLot: number
     maxTicketsPerLot: number
@@ -26,7 +27,7 @@ interface LoteModalProps {
   }
 }
 
-export function LoteModal({ open, onClose, onSave, lote }: LoteModalProps) {
+export function LoteModal({ open, onClose, onSave, password, lote }: LoteModalProps) {
   const { isDarkMode } = useDemoDates()
   const [formData, setFormData] = useState({
     currentLot: lote?.currentLot || 1,
@@ -60,7 +61,7 @@ export function LoteModal({ open, onClose, onSave, lote }: LoteModalProps) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          password: 'admin123',
+          password,
           updates: {
             lotes: {
               enabled: formData.enabled,
@@ -242,6 +243,5 @@ export function LoteModal({ open, onClose, onSave, lote }: LoteModalProps) {
     </Dialog>
   )
 }
-
 
 

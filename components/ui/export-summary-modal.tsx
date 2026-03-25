@@ -16,11 +16,13 @@ import { FileText, Download, Copy } from 'lucide-react'
 interface ExportSummaryModalProps {
   open: boolean
   onClose: () => void
+  password: string
 }
 
 export function ExportSummaryModal({
   open,
   onClose,
+  password,
 }: ExportSummaryModalProps) {
   const { isDarkMode } = useDemoDates()
   const [isExporting, setIsExporting] = useState(false)
@@ -38,7 +40,7 @@ export function ExportSummaryModal({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          password: 'admin123',
+          password,
           format,
         }),
       })
@@ -272,6 +274,4 @@ export function ExportSummaryModal({
     </Dialog>
   )
 }
-
-
 

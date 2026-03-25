@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { updateThemeFile, getThemeConfig } from '@/lib/theme-updater';
+import { isDemoAdminPasswordValid } from '@/lib/demo-admin-auth';
 
 export async function POST(request: Request) {
   try {
@@ -7,7 +8,7 @@ export async function POST(request: Request) {
     const { password, updates } = body;
 
     // Verificar contraseña
-    if (password !== 'admin123') {
+    if (!isDemoAdminPasswordValid(password)) {
       return NextResponse.json(
         { error: 'Contraseña incorrecta' },
         { status: 401 }
@@ -51,10 +52,12 @@ export async function POST(request: Request) {
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const password = searchParams.get('password');
+    const password =
+      request.headers.get('x-demo-admin-password') ||
+      searchParams.get('password');
 
     // Verificar contraseña
-    if (password !== 'admin123') {
+    if (!isDemoAdminPasswordValid(password)) {
       return NextResponse.json(
         { error: 'Contraseña incorrecta' },
         { status: 401 }
@@ -76,6 +79,4 @@ export async function GET(request: Request) {
     );
   }
 }
-
-
 

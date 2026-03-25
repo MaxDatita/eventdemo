@@ -4,9 +4,11 @@ import { getGoogleDriveService, isGoogleDriveConfigured } from '@/lib/google-dri
 
 export async function GET(request: NextRequest) {
   try {
-    // Verificar password de moderación si se proporciona
-    const password = request.nextUrl.searchParams.get('password');
-    if (password && password !== photoWallConfig.moderationPassword) {
+    // Verificar password de moderación
+    const password =
+      request.headers.get('x-moderation-password') ||
+      request.nextUrl.searchParams.get('password');
+    if (!password || password !== photoWallConfig.moderationPassword) {
       return NextResponse.json({ error: 'Contraseña incorrecta' }, { status: 401 });
     }
 

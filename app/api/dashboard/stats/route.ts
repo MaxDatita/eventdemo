@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { generateDashboardData, calculateStats, generateMockTickets } from '@/lib/mock-data';
+import { isDemoAdminPasswordValid } from '@/lib/demo-admin-auth';
 
 // Compartir el mismo estado de invitados entre todas las rutas
 let mockGuests = generateDashboardData().guests;
@@ -18,7 +19,7 @@ export async function GET(request: Request) {
     const password = searchParams.get('password');
 
     // Verificar contraseña
-    if (password !== 'admin123') {
+    if (!isDemoAdminPasswordValid(password)) {
       return NextResponse.json(
         { error: 'Contraseña incorrecta' },
         { status: 401 }
@@ -44,6 +45,5 @@ export async function GET(request: Request) {
     );
   }
 }
-
 
 

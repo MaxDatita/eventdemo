@@ -12,7 +12,6 @@ export function DemoControlPanel() {
     isPanelOpen,
     isEventLive,
     isDarkMode,
-    isDemoMode,
     rsvpMode,
     startEventNow,
     goBackToPreEvent,
@@ -22,6 +21,12 @@ export function DemoControlPanel() {
   } = useDemoDates()
 
   const handleRsvpModeChange = async (mode: 'tickets' | 'rsvp') => {
+    const password = window.prompt('Ingresá la contraseña de demo para guardar este cambio:')
+    if (!password?.trim()) {
+      toast.error('Se necesita la contraseña para guardar el cambio')
+      return
+    }
+
     // Actualizar el estado local primero
     setRsvpMode(mode)
     
@@ -33,7 +38,7 @@ export function DemoControlPanel() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          password: 'admin123',
+          password: password.trim(),
           updates: {
             rsvpButton: {
               mode: mode
@@ -69,18 +74,12 @@ export function DemoControlPanel() {
   }
 
   const handleNavigateToModeration = () => {
-    const url = isDemoMode 
-      ? '/moderacion?demo=true&password=admin123'
-      : '/moderacion'
-    window.open(url, '_blank')
+    window.open('/moderacion', '_blank')
     togglePanel()
   }
 
   const handleNavigateToDashboard = () => {
-    const url = isDemoMode
-      ? '/invitados?demo=true&password=admin123'
-      : '/invitados'
-    window.open(url, '_blank')
+    window.open('/invitados', '_blank')
     togglePanel()
   }
 
@@ -91,10 +90,7 @@ export function DemoControlPanel() {
   }
 
   const handleNavigateToProjection = () => {
-    const url = isDemoMode
-      ? '/proyeccion?demo=true&password=admin123'
-      : '/proyeccion'
-    window.open(url, '_blank')
+    window.open('/proyeccion', '_blank')
     togglePanel()
   }
 

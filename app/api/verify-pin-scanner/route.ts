@@ -8,7 +8,11 @@ export async function POST(request: Request) {
 
   try {
     const { pin } = await request.json()
-    const correctPin = '1234'
+    const correctPin = process.env.SCANNER_PIN
+
+    if (!correctPin) {
+      return NextResponse.json({ error: 'Scanner no configurado' }, { status: 503 })
+    }
 
     if (pin === correctPin) {
       return NextResponse.json({ success: true })

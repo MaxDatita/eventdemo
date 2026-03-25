@@ -47,13 +47,13 @@ export async function GET(req: NextRequest) {
       return new Response('No se pudo obtener la imagen de Google Drive', { status: 502 });
     }
 
-    const buffer = Buffer.from(response.data as ArrayBuffer);
+    const bytes = new Uint8Array(response.data as ArrayBuffer);
 
-    return new Response(buffer, {
+    return new Response(bytes, {
       status: 200,
       headers: {
         'content-type': mimeType,
-        'content-length': buffer.length.toString(),
+        'content-length': bytes.byteLength.toString(),
         'cache-control': 'public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400',
         'content-disposition': `inline; filename="${fileMeta.data.name || 'image'}"`,
       },

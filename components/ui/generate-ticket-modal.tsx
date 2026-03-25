@@ -17,12 +17,14 @@ interface GenerateTicketModalProps {
   open: boolean
   onClose: () => void
   onSuccess: () => void
+  password: string
 }
 
 export function GenerateTicketModal({
   open,
   onClose,
   onSuccess,
+  password,
 }: GenerateTicketModalProps) {
   const { isDarkMode } = useDemoDates()
   const [formData, setFormData] = useState({
@@ -50,7 +52,7 @@ export function GenerateTicketModal({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          password: 'admin123',
+          password,
           name: formData.name,
           email: formData.email,
           ticketType: formData.ticketType,
@@ -198,6 +200,5 @@ export function GenerateTicketModal({
     </Dialog>
   )
 }
-
 
 

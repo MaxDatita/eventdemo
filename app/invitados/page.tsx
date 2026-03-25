@@ -27,12 +27,9 @@ export default function InvitadosPage() {
   const [error, setError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
 
-  const fetchInvitados = async (currentPassword: string) => {
+  const fetchInvitados = async () => {
     const response = await fetch('/api/invitados', {
       cache: 'no-store',
-      headers: {
-        'x-invitados-password': currentPassword,
-      },
     })
     const data = await response.json()
 
@@ -44,10 +41,27 @@ export default function InvitadosPage() {
   }
 
   useEffect(() => {
-    const stored = typeof window !== 'undefined' ? sessionStorage.getItem('invitados_password') : null
-    if (stored) {
-      setPassword(stored)
-      setIsAuthenticated(true)
+    let alive = true
+
+    const checkSession = async () => {
+      try {
+        const response = await fetch('/api/invitados/auth', { cache: 'no-store' })
+        if (!alive) return
+        setIsAuthenticated(response.ok)
+      } catch {
+        if (!alive) return
+        setIsAuthenticated(false)
+      } finally {
+        if (alive) {
+          setLoading(false)
+        }
+      }
+    }
+
+    void checkSession()
+
+    return () => {
+      alive = false
     }
   }, [])
 
@@ -62,7 +76,7 @@ export default function InvitadosPage() {
   }, [])
 
   useEffect(() => {
-    if (!isAuthenticated || !password) return
+    if (!isAuthenticated) return
 
     let alive = true
 
@@ -71,12 +85,12 @@ export default function InvitadosPage() {
         if (showLoading) {
           setLoading(true)
         }
-        await fetchInvitados(password)
+        await fetchInvitados()
         if (alive) setError(null)
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Error cargando invitados'
         if (message.toLowerCase().includes('contraseña incorrecta')) {
-          sessionStorage.removeItem('invitados_password')
+          await fetch('/api/invitados/auth', { method: 'DELETE' }).catch(() => null)
           if (alive) {
             setIsAuthenticated(false)
             setPassword('')
@@ -104,7 +118,7 @@ export default function InvitadosPage() {
       alive = false
       clearInterval(interval)
     }
-  }, [isAuthenticated, password])
+  }, [isAuthenticated])
 
   const handleLogin = async () => {
     try {
@@ -126,10 +140,10 @@ export default function InvitadosPage() {
         throw new Error(data?.error || 'No se pudo iniciar sesión')
       }
 
-      sessionStorage.setItem('invitados_password', trimmed)
-      setPassword(trimmed)
+      setPassword('')
       setIsAuthenticated(true)
       setError(null)
+      setLoading(true)
     } catch (err) {
       setAuthError(err instanceof Error ? err.message : 'Error al iniciar sesión')
     }
@@ -144,7 +158,6 @@ export default function InvitadosPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-invitados-password': password,
         },
         body: JSON.stringify({ id, ingreso }),
       })
@@ -152,7 +165,7 @@ export default function InvitadosPage() {
 
       if (!response.ok) {
         if (response.status === 401) {
-          sessionStorage.removeItem('invitados_password')
+          await fetch('/api/invitados/auth', { method: 'DELETE' }).catch(() => null)
           setIsAuthenticated(false)
           setPassword('')
           setAuthError('Tu sesión expiró. Ingresá la contraseña nuevamente.')
@@ -212,7 +225,7 @@ export default function InvitadosPage() {
               <Lock className="h-8 w-8 text-white" />
             </div>
             <h1 className="text-2xl font-bold text-gray-900 font-secondary">Control de Ingresos</h1>
-            <p className="text-gray-700">Ingresa la contraseña para acceder <br/>(Contraseña Demo: admin123)</p>
+            <p className="text-gray-700">Ingresa la contraseña para acceder.</p>
             <Input
               type="password"
               value={password}

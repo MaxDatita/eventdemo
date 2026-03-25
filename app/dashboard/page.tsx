@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useCallback, Suspense } from 'react'
-import { useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
@@ -69,7 +68,6 @@ interface DashboardStats {
 type FilterType = 'all' | 'with-dietary' | 'with-table' | 'without-table'
 
 function DashboardContent() {
-  const searchParams = useSearchParams()
   const { isDarkMode } = useDemoDates()
   const [password, setPassword] = useState('')
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -92,13 +90,34 @@ function DashboardContent() {
   const [showFilterModal, setShowFilterModal] = useState(false)
   const [showAddGuestModal, setShowAddGuestModal] = useState(false)
 
-  const handleLogin = () => {
-    if (password === 'admin123') {
+  const handleLogin = async () => {
+    const trimmed = password.trim()
+    if (!trimmed) {
+      toast.error('Ingresá una contraseña')
+      return
+    }
+
+    setIsLoading(true)
+    try {
+      const response = await fetch('/api/dashboard/update-theme', {
+        cache: 'no-store',
+        headers: {
+          'x-demo-admin-password': trimmed,
+        },
+      })
+      const result = await response.json()
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Contraseña incorrecta')
+      }
+
+      setPassword(trimmed)
       setIsAuthenticated(true)
-      fetchDashboardData()
-      fetchThemeConfig()
-    } else {
-      toast.error('Contraseña incorrecta')
+      setThemeConfig(result.config)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Contraseña incorrecta')
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -178,9 +197,11 @@ function DashboardContent() {
     if (!isAuthenticated) return
 
     try {
-      const response = await fetch(
-        `/api/dashboard/update-theme?password=${encodeURIComponent(password || 'admin123')}`
-      )
+      const response = await fetch('/api/dashboard/update-theme', {
+        headers: {
+          'x-demo-admin-password': password,
+        },
+      })
       const result = await response.json()
 
       if (response.ok && result.success) {
@@ -203,23 +224,6 @@ function DashboardContent() {
       console.error('Error fetching deleted guests:', error)
     }
   }, [isAuthenticated, loadGuestsFromStorage])
-
-  // Auto-autenticar si viene la contraseña en query params (modo demo)
-  useEffect(() => {
-    const demoParam = searchParams.get('demo')
-    const passwordParam = searchParams.get('password')
-    
-    if (demoParam === 'true' && passwordParam === 'admin123' && !isAuthenticated) {
-      setPassword(passwordParam)
-      setIsAuthenticated(true)
-      // Ejecutar las funciones fetch después de autenticar
-      setTimeout(() => {
-        fetchDashboardData()
-        fetchThemeConfig()
-        fetchDeletedGuests()
-      }, 100)
-    }
-  }, [searchParams, isAuthenticated, fetchDashboardData, fetchThemeConfig, fetchDeletedGuests])
 
   // Auto-refresh cada 60 segundos
   useEffect(() => {
@@ -449,15 +453,15 @@ function DashboardContent() {
                 <Lock className="h-8 w-8 text-white" />
               </div>
               <h1 className="heading-h1-alt">Dashboard del Evento</h1>
-              <p className="auth-card-text">Ingresa la contraseña para acceder <br/><span className="text-ls text-gray-500">(admin123)</span></p>
+              <p className="auth-card-text">Ingresa la contraseña para acceder.</p>
               <Input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Contraseña"
-                onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
+                onKeyPress={(e) => e.key === 'Enter' && void handleLogin()}
               />
-              <Button onClick={handleLogin} className="w-full">
+              <Button onClick={() => void handleLogin()} className="w-full" disabled={isLoading}>
                 Acceder
               </Button>
             </div>
@@ -989,17 +993,20 @@ function DashboardContent() {
           onClose={() => setShowLoteModal(false)}
           onSave={handleLoteSave}
           lote={themeConfig?.tickets?.lotes}
+          password={password}
         />
 
         <GenerateTicketModal
           open={showGenerateTicketModal}
           onClose={() => setShowGenerateTicketModal(false)}
           onSuccess={handleGenerateTicketSuccess}
+          password={password}
         />
 
         <ExportSummaryModal
           open={showExportModal}
           onClose={() => setShowExportModal(false)}
+          password={password}
         />
 
         <EditGuestModal
@@ -1185,4 +1192,3 @@ export default function DashboardPage() {
     </Suspense>
   )
 }
-
