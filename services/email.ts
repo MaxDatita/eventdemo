@@ -19,6 +19,8 @@ interface EventData {
   organizerEmail: string;
 }
 
+const isDevelopment = process.env.NODE_ENV !== 'production';
+
 // Función auxiliar para convertir imagen a base64
 async function imageToBase64(url: string): Promise<string> {
   try {
@@ -53,17 +55,16 @@ async function imageToBase64(url: string): Promise<string> {
 
   } catch (error) {
     if (error instanceof Error) {
-      console.error('Error convirtiendo imagen a base64:', {
-        url,
-        error: error.message,
-        stack: error.stack
-      });
+      console.error('Error convirtiendo imagen a base64');
+      if (isDevelopment) {
+        console.error({ url, error: error.message, stack: error.stack });
+      }
       throw new Error(`Error convirtiendo imagen a base64: ${error.message}`);
     } else {
-      console.error('Error desconocido convirtiendo imagen a base64:', {
-        url,
-        error: String(error)
-      });
+      console.error('Error desconocido convirtiendo imagen a base64');
+      if (isDevelopment) {
+        console.error({ url, error: String(error) });
+      }
       throw new Error(`Error desconocido convirtiendo imagen a base64: ${String(error)}`);
     }
   }
@@ -94,7 +95,7 @@ export async function sendTicketEmail(data: TicketEmailData) {
             qrCode: qrBase64
           };
         } catch (error) {
-          console.error(`Error procesando QR para ticket ${ticket.ticketId}:`, error);
+          console.error(`Error procesando QR para ticket ${ticket.ticketId}`);
           throw new Error(`Error procesando QR para ticket ${ticket.ticketId}: ${error instanceof Error ? error.message : String(error)}`);
         }
       })
@@ -175,10 +176,12 @@ export async function sendTicketEmail(data: TicketEmailData) {
 
     // Verificamos si el email fue encolado correctamente
     if (responseData.queued) {
-      console.log('Email en cola...', {
-        emailId: responseData.id,
-        rowIndexes: tickets.map(ticket => ticket.rowIndex)
-      });
+      if (isDevelopment) {
+        console.log('Email en cola', {
+          emailId: responseData.id,
+          rowIndexes: tickets.map(ticket => ticket.rowIndex)
+        });
+      }
 
       // Marcar los tickets como enviados
       const markResponse = await fetch('/api/google-sheets', {
@@ -192,20 +195,22 @@ export async function sendTicketEmail(data: TicketEmailData) {
       });
 
       const markResult = await markResponse.json();
-      console.log('Resultado de marcar tickets:', markResult);
+      if (isDevelopment) {
+        console.log('Resultado de marcar tickets:', markResult);
+      }
 
       if (!markResult.success) {
         console.error('Error al marcar tickets:', markResult.error);
         throw new Error(markResult.error);
       }
     } else {
-      console.error('El email no fue encolado correctamente:', responseData);
+      console.error('El email no fue encolado correctamente');
       throw new Error('Error al encolar el email');
     }
 
     return responseData;
   } catch (error) {
-    console.error('Error en el proceso de envío:', error);
+    console.error('Error en el proceso de envío');
     throw error;
   }
-} 
+}

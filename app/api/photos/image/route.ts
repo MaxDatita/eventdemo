@@ -1,19 +1,22 @@
 import { NextRequest } from 'next/server';
 import { getDriveApiClient, isGoogleDriveConfigured } from '@/lib/google-drive';
+import { isSafeId } from '@/lib/validation';
 
 // Proxy autenticado para servir imágenes de Google Drive.
 // Esto permite ver media compartida con la cuenta OAuth aunque no sea pública.
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const fileId = searchParams.get('id');
+    const fileIdParam = searchParams.get('id');
 
-    if (!fileId) {
+    if (!isSafeId(fileIdParam, { minLength: 10, maxLength: 200 })) {
       return new Response(JSON.stringify({ error: 'Falta parámetro id' }), {
         status: 400,
         headers: { 'content-type': 'application/json' },
       });
     }
+
+    const fileId = String(fileIdParam).trim();
 
     if (!isGoogleDriveConfigured()) {
       return new Response(

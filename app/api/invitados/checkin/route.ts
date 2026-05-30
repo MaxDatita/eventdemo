@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { markIngresoById } from '@/lib/google-sheets-invitados';
 import { invalidateInvitadosCache } from '@/lib/invitados-cache';
 import { isInvitadosPasswordValid } from '@/lib/invitados-auth';
+import { isSafeId } from '@/lib/validation';
 
 export async function POST(request: Request) {
   try {
@@ -11,7 +12,7 @@ export async function POST(request: Request) {
 
     const { id, ingreso } = await request.json();
 
-    if (!id || typeof id !== 'string') {
+    if (!isSafeId(id, { minLength: 1, maxLength: 80 })) {
       return NextResponse.json({ error: 'ID requerido' }, { status: 400 });
     }
 

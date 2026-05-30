@@ -43,13 +43,6 @@ export async function GET(request: Request) {
     // Contar todos los tickets, incluyendo el encabezado
     const soldTickets = rows.length;
     
-    console.log('Verificación de disponibilidad:', {
-      totalFilas: rows.length,
-      ticketsVendidos: soldTickets,
-      limiteTotal: theme.tickets.lotes.maxTicketsPerLot,
-      disponibles: theme.tickets.lotes.maxTicketsPerLot - soldTickets
-    });
-
     // Si ya alcanzamos o superamos el límite del lote
     if (soldTickets >= theme.tickets.lotes.maxTicketsPerLot) {
       return NextResponse.json({
@@ -80,7 +73,7 @@ export async function GET(request: Request) {
     });
 
   } catch (error) {
-    console.error('Error verificando disponibilidad:', error);
+    console.error('Error verificando disponibilidad');
     return NextResponse.json(
       { error: 'Error al verificar disponibilidad' },
       { status: 500 }

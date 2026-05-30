@@ -22,6 +22,10 @@ export interface InvitadoRecord {
   fechaHoraIngreso: string | null;
 }
 
+export interface AdminInvitadoRecord extends InvitadoRecord {
+  rowNumber: number;
+}
+
 function getJwtClient() {
   return new JWT({
     email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
@@ -122,6 +126,54 @@ function asText(value: unknown): string | null {
   return String(value).trim();
 }
 
+function normalizeAdminRowInput(input: {
+  nombre: string;
+  acompanantes?: number | null;
+  mesa?: string | null;
+}) {
+  return {
+    nombre: input.nombre.trim(),
+    acompanantes:
+      input.acompanantes === null || input.acompanantes === undefined ? null : input.acompanantes,
+    mesa: input.mesa?.trim() || null,
+  };
+}
+
+function collectExistingIds(
+  rows: Array<{ get: (header: string) => unknown }>,
+  idHeader: string
+) {
+  return new Set(
+    rows
+      .map((row) => String(row.get(idHeader) || '').trim())
+      .filter(Boolean)
+  );
+}
+
+function generateUniqueFourDigitId(existingIds: Set<string>) {
+  const TOTAL_IDS = 10000;
+
+  if (existingIds.size >= TOTAL_IDS) {
+    throw new Error('No hay IDs disponibles para asignar');
+  }
+
+  for (let attempt = 0; attempt < 200; attempt += 1) {
+    const candidate = String(Math.floor(Math.random() * TOTAL_IDS)).padStart(4, '0');
+    if (!existingIds.has(candidate)) {
+      return candidate;
+    }
+  }
+
+  for (let candidate = 0; candidate < TOTAL_IDS; candidate += 1) {
+    const formatted = String(candidate).padStart(4, '0');
+    if (!existingIds.has(formatted)) {
+      return formatted;
+    }
+  }
+
+  throw new Error('No hay IDs disponibles para asignar');
+}
+
 function mapRowToInvitado(
   row: { get: (header: string) => unknown },
   columns: InvitadoColumnMap
@@ -136,6 +188,16 @@ function mapRowToInvitado(
     mesa: columns.mesa ? asText(row.get(columns.mesa)) : null,
     ingreso: toBoolean(row.get(columns.ingreso!)),
     fechaHoraIngreso: asText(row.get(columns.fechaHoraIngreso!)),
+  };
+}
+
+function mapRowToAdminInvitado(
+  row: { get: (header: string) => unknown; rowNumber?: number },
+  columns: InvitadoColumnMap
+): AdminInvitadoRecord {
+  return {
+    ...mapRowToInvitado(row, columns),
+    rowNumber: typeof row.rowNumber === 'number' ? row.rowNumber : 0,
   };
 }
 
@@ -201,4 +263,98 @@ export async function markIngresoById(id: string, ingreso: boolean): Promise<Inv
 
   await row.save();
   return mapRowToInvitado(row, columns);
+}
+
+export async function listAdminInvitados(): Promise<AdminInvitadoRecord[]> {
+  const sheet = await getInvitadosSheet();
+  const columns = resolveColumns(sheet.headerValues);
+  validateRequiredColumns(columns);
+
+  const rows = await sheet.getRows();
+
+  return rows
+    .map((row) => mapRowToAdminInvitado(row, columns))
+    .filter((guest) => guest.nombre)
+    .sort((a, b) => b.rowNumber - a.rowNumber);
+}
+
+export async function createAdminInvitado(input: {
+  nombre: string;
+  acompanantes?: number | null;
+  mesa?: string | null;
+}) {
+  const sheet = await getInvitadosSheet();
+  const columns = resolveColumns(sheet.headerValues);
+  validateRequiredColumns(columns);
+  const normalizedInput = normalizeAdminRowInput(input);
+  const rows = await sheet.getRows();
+  const nextId = generateUniqueFourDigitId(collectExistingIds(rows, columns.id!));
+
+  const payload: Record<string, string | number> = {
+    [columns.id!]: nextId,
+    [columns.nombre!]: normalizedInput.nombre,
+    [columns.ingreso!]: 'FALSE',
+    [columns.fechaHoraIngreso!]: '',
+  };
+
+  if (columns.acompanantes) {
+    payload[columns.acompanantes] =
+      normalizedInput.acompanantes === null ? '' : normalizedInput.acompanantes;
+  }
+
+  if (columns.mesa) {
+    payload[columns.mesa] = normalizedInput.mesa || '';
+  }
+
+  const row = await sheet.addRow(payload, { raw: false });
+  return mapRowToAdminInvitado(row, columns);
+}
+
+export async function updateAdminInvitado(
+  rowNumber: number,
+  input: {
+    nombre: string;
+    acompanantes?: number | null;
+    mesa?: string | null;
+  }
+) {
+  const sheet = await getInvitadosSheet();
+  const columns = resolveColumns(sheet.headerValues);
+  validateRequiredColumns(columns);
+  const normalizedInput = normalizeAdminRowInput(input);
+  const rows = await sheet.getRows();
+  const row = rows.find((item) => item.rowNumber === rowNumber);
+
+  if (!row) {
+    throw new Error('Invitado no encontrado');
+  }
+
+  row.set(columns.nombre!, normalizedInput.nombre);
+
+  if (columns.acompanantes) {
+    row.set(columns.acompanantes, normalizedInput.acompanantes === null ? '' : normalizedInput.acompanantes);
+  }
+
+  if (columns.mesa) {
+    row.set(columns.mesa, normalizedInput.mesa || '');
+  }
+
+  await row.save();
+  return mapRowToAdminInvitado(row, columns);
+}
+
+export async function deleteAdminInvitado(rowNumber: number) {
+  const sheet = await getInvitadosSheet();
+  const columns = resolveColumns(sheet.headerValues);
+  validateRequiredColumns(columns);
+  const rows = await sheet.getRows();
+  const row = rows.find((item) => item.rowNumber === rowNumber);
+
+  if (!row) {
+    throw new Error('Invitado no encontrado');
+  }
+
+  const invitado = mapRowToAdminInvitado(row, columns);
+  await row.delete();
+  return invitado;
 }

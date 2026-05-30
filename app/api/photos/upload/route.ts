@@ -1,9 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { photoWallConfig } from '@/config/photo-wall';
 import { getGoogleDriveService, isGoogleDriveConfigured } from '@/lib/google-drive';
+import { applyRateLimit, getRateLimitClientIp } from '@/lib/rate-limit';
+import { logError, logWarn } from '@/lib/server-log';
+
+const MAX_PHOTO_USERNAME_LENGTH = 50;
+const MAX_PHOTO_FILENAME_LENGTH = 120;
 
 export async function POST(request: NextRequest) {
   try {
+    const clientIp = getRateLimitClientIp(request);
+    const rateLimit = applyRateLimit(request, {
+      name: 'photos-upload',
+      limit: 3,
+      windowMs: 60 * 1000,
+    });
+
+    if (!rateLimit.allowed) {
+      logWarn('photo_upload_rate_limited', { ip: clientIp });
+      return NextResponse.json(
+        { error: 'Demasiadas cargas seguidas. Esperá un momento antes de volver a intentar.' },
+        { status: 429 }
+      );
+    }
+
     // Verificar si Google Drive está configurado
     if (!isGoogleDriveConfigured()) {
       return NextResponse.json({ 
@@ -21,8 +41,31 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No se proporcionó ninguna foto' }, { status: 400 });
     }
 
+    if (!(photo instanceof File)) {
+      return NextResponse.json({ error: 'Archivo inválido' }, { status: 400 });
+    }
+
     if (!username || username.trim() === '') {
       return NextResponse.json({ error: 'El nombre es requerido' }, { status: 400 });
+    }
+
+    if (username.trim().length > MAX_PHOTO_USERNAME_LENGTH) {
+      return NextResponse.json(
+        { error: `El nombre no puede superar los ${MAX_PHOTO_USERNAME_LENGTH} caracteres` },
+        { status: 400 }
+      );
+    }
+
+    if (photo.size <= 0) {
+      return NextResponse.json({ error: 'El archivo está vacío' }, { status: 400 });
+    }
+
+    const safeFileName = (photo.name || 'photo.jpg').trim();
+    if (safeFileName.length === 0 || safeFileName.length > MAX_PHOTO_FILENAME_LENGTH) {
+      return NextResponse.json(
+        { error: 'El nombre del archivo no es válido' },
+        { status: 400 }
+      );
     }
 
     // Validar formato (permitir HEIC/HEIF pero convertirlos en cliente, aceptar JPEG/PNG/WEBP)
@@ -60,7 +103,7 @@ export async function POST(request: NextRequest) {
     // Subir a Google Drive
     const drivePhoto = await googleDriveService.uploadPhoto(
       buffer, 
-      photo.name || 'photo.jpg', 
+      safeFileName, 
       username.trim()
     );
 
@@ -78,9 +121,10 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error uploading photo:', error);
-    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
-    console.error('Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
+    logError('photo_upload_error', {
+      ip: getRateLimitClientIp(request),
+      reason: error instanceof Error ? error.message : 'unknown',
+    });
     
     // Mensajes de error más descriptivos
     let errorMessage = 'Error al subir la foto a Google Drive';

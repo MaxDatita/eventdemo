@@ -1,8 +1,15 @@
 import { NextResponse } from 'next/server';
+import { photoWallConfig } from '@/config/photo-wall';
 import { getGoogleDriveService, isGoogleDriveConfigured } from '@/lib/google-drive';
 
-export async function POST() {
+export async function POST(request: Request) {
   try {
+    const { password } = await request.json();
+
+    if (password !== photoWallConfig.moderationPassword) {
+      return NextResponse.json({ error: 'Contraseña incorrecta' }, { status: 401 });
+    }
+
     // Verificar si Google Drive está configurado
     if (!isGoogleDriveConfigured()) {
       return NextResponse.json({ 
@@ -33,4 +40,3 @@ export async function POST() {
     }, { status: 500 });
   }
 }
-

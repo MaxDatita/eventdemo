@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { photoWallConfig } from '@/config/photo-wall';
 import { getGoogleDriveService, isGoogleDriveConfigured } from '@/lib/google-drive';
+import { isSafeId } from '@/lib/validation';
 
 export async function PUT(request: NextRequest) {
   try {
@@ -9,6 +10,10 @@ export async function PUT(request: NextRequest) {
     // Validar password de moderación
     if (password !== photoWallConfig.moderationPassword) {
       return NextResponse.json({ error: 'Contraseña incorrecta' }, { status: 401 });
+    }
+
+    if (!isSafeId(photoId, { minLength: 10, maxLength: 200 })) {
+      return NextResponse.json({ error: 'ID de foto inválido' }, { status: 400 });
     }
 
     // Validar acción

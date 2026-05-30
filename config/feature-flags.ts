@@ -2,8 +2,9 @@ export const demoFeatures = {
   social: true,
   rsvp: false,
   tickets: false,
-  scanner: false,
+  scanner: true,
   payments: false,
+  email: false,
 } as const;
 
 export const pausedFeatureMessage =

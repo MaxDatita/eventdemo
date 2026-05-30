@@ -1,19 +1,24 @@
 import { NextRequest } from 'next/server';
 import { getDriveApiClient, isGoogleDriveConfigured } from '@/lib/google-drive';
+import { isSafeId } from '@/lib/validation';
 
 // Proxy para servir videos de Google Drive usando la API con Service Account
 // Hace el archivo público temporalmente si es necesario para streaming
 export async function GET(req: NextRequest) {
+  const isDevelopment = process.env.NODE_ENV !== 'production';
+
   try {
     const { searchParams } = new URL(req.url);
-    const fileId = searchParams.get('id');
+    const fileIdParam = searchParams.get('id');
 
-    if (!fileId) {
+    if (!isSafeId(fileIdParam, { minLength: 10, maxLength: 200 })) {
       return new Response(JSON.stringify({ error: 'Falta parámetro id' }), {
         status: 400,
         headers: { 'content-type': 'application/json' },
       });
     }
+
+    const fileId = String(fileIdParam).trim();
 
     // Verificar que Google Drive está configurado (OAuth o Service Account)
     if (!isGoogleDriveConfigured()) {
@@ -23,7 +28,9 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    console.log('Fetching video from Google Drive using API, fileId:', fileId);
+    if (isDevelopment) {
+      console.log('Fetching video from Google Drive using API');
+    }
 
     const drive = getDriveApiClient();
 
@@ -37,11 +44,9 @@ export async function GET(req: NextRequest) {
       });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      console.error('Error getting file info:', errorMessage);
+      console.error('Error getting file info');
       throw new Error(`No se pudo acceder al archivo: ${errorMessage}`);
     }
-
-    console.log('File info:', fileInfo.data);
 
     const mimeType = fileInfo.data.mimeType || 'video/mp4';
     const fileSize = fileInfo.data.size ? parseInt(fileInfo.data.size) : undefined;
@@ -63,7 +68,9 @@ export async function GET(req: NextRequest) {
       );
       
       if (!isPublic) {
-        console.log('Making file public for streaming...');
+        if (isDevelopment) {
+          console.log('Making file public for streaming');
+        }
         await drive.permissions.create({
           fileId: fileId,
           requestBody: {
@@ -72,7 +79,6 @@ export async function GET(req: NextRequest) {
           },
           supportsAllDrives: true,
         });
-        console.log('File made public successfully');
         
         // Re-obtener info para tener webContentLink
         fileInfo = await drive.files.get({
@@ -88,7 +94,9 @@ export async function GET(req: NextRequest) {
 
     // Si tenemos webContentLink, usarlo directamente (más confiable para streaming)
     if (fileInfo.data.webContentLink) {
-      console.log('Using webContentLink for video streaming:', fileInfo.data.webContentLink);
+      if (isDevelopment) {
+        console.log('Using webContentLink for video streaming');
+      }
       const videoUrl = fileInfo.data.webContentLink;
 
       const rangeHeader = req.headers.get('range');
@@ -119,9 +127,6 @@ export async function GET(req: NextRequest) {
         if (contentRange) responseHeaders.set('content-range', contentRange);
         responseHeaders.set('accept-ranges', acceptRanges || 'bytes');
         responseHeaders.set('cache-control', 'public, max-age=3600, must-revalidate');
-        responseHeaders.set('access-control-allow-origin', '*');
-        responseHeaders.set('access-control-allow-methods', 'GET, HEAD, OPTIONS');
-        responseHeaders.set('access-control-allow-headers', 'Range');
 
         return new Response(videoResponse.body, {
           status: videoResponse.status,
@@ -132,7 +137,9 @@ export async function GET(req: NextRequest) {
 
     // Fallback: descargar el video completo y servirlo como buffer
     // Esto es más confiable para que el navegador pueda parsear los metadatos MP4
-    console.log('Using API direct download (buffer) as fallback');
+    if (isDevelopment) {
+      console.log('Using API direct download (buffer) as fallback');
+    }
     
     const rangeHeader = req.headers.get('range');
     let start = 0;
@@ -146,7 +153,9 @@ export async function GET(req: NextRequest) {
         end = ranges[2] ? parseInt(ranges[2], 10) : fileSize - 1;
         end = Math.min(end, fileSize - 1);
         status = 206;
-        console.log(`Range request: ${start}-${end} of ${fileSize}`);
+        if (isDevelopment) {
+          console.log(`Range request: ${start}-${end} of ${fileSize}`);
+        }
       }
     }
 
@@ -166,8 +175,6 @@ export async function GET(req: NextRequest) {
       return new Response('No se pudo obtener el video de Google Drive', { status: 502 });
     }
 
-    console.log('Video downloaded, size:', (response.data as ArrayBuffer).byteLength, 'bytes');
-
     // Convertir ArrayBuffer a Buffer
     const fullBuffer = Buffer.from(response.data as ArrayBuffer);
     
@@ -184,7 +191,6 @@ export async function GET(req: NextRequest) {
         // Para videos MP4, esto es importante porque los metadatos están al inicio
         controller.enqueue(new Uint8Array(buffer));
         controller.close();
-        console.log('Video buffer sent, size:', buffer.length, 'bytes');
       },
     });
 
@@ -198,24 +204,21 @@ export async function GET(req: NextRequest) {
     }
     headers.set('accept-ranges', 'bytes');
     headers.set('cache-control', 'public, max-age=3600, must-revalidate');
-    headers.set('access-control-allow-origin', '*');
-    headers.set('access-control-allow-methods', 'GET, HEAD, OPTIONS');
-    headers.set('access-control-allow-headers', 'Range');
     // Header importante: indicar que es un video para reproducir
     headers.set('content-disposition', `inline; filename="${fileInfo.data.name || 'video.mp4'}"`);
-
-    console.log(`Returning video (${status}), type: ${mimeType}, size: ${buffer.length} bytes`);
 
     return new Response(stream, {
       status,
       headers,
     });
   } catch (error) {
-    console.error('Error en el proxy de video:', error);
+    console.error('Error en el proxy de video');
     return new Response(
       JSON.stringify({ 
         error: 'Error interno del servidor al procesar el video',
-        details: error instanceof Error ? error.message : String(error)
+        details: process.env.NODE_ENV === 'development'
+          ? (error instanceof Error ? error.message : String(error))
+          : undefined
       }), 
       {
         status: 500,

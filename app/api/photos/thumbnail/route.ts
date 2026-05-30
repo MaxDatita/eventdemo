@@ -1,18 +1,21 @@
 import { NextRequest } from 'next/server';
 import { getDriveApiClient, isGoogleDriveConfigured } from '@/lib/google-drive';
+import { isSafeId } from '@/lib/validation';
 
 // Proxy para servir thumbnails de imagenes y videos desde Google Drive.
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const fileId = searchParams.get('id');
+    const fileIdParam = searchParams.get('id');
 
-    if (!fileId) {
+    if (!isSafeId(fileIdParam, { minLength: 10, maxLength: 200 })) {
       return new Response(JSON.stringify({ error: 'Falta parámetro id' }), {
         status: 400,
         headers: { 'content-type': 'application/json' },
       });
     }
+
+    const fileId = String(fileIdParam).trim();
 
     if (!isGoogleDriveConfigured()) {
       return new Response(
@@ -47,18 +50,22 @@ export async function GET(req: NextRequest) {
         headers: {
           'content-type': contentType,
           'cache-control': 'public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400',
-          'access-control-allow-origin': '*',
         },
       });
     }
 
     return new Response('No se pudo obtener el thumbnail del archivo', { status: 502 });
   } catch (error) {
-    console.error('Error en el proxy de thumbnail:', error);
+    console.error('Error en el proxy de thumbnail');
     return new Response(
       JSON.stringify({
         error: 'Error interno del servidor al obtener el thumbnail',
-        details: error instanceof Error ? error.message : String(error),
+        details:
+          process.env.NODE_ENV === 'development'
+            ? error instanceof Error
+              ? error.message
+              : String(error)
+            : undefined,
       }),
       {
         status: 500,
@@ -67,7 +74,3 @@ export async function GET(req: NextRequest) {
     );
   }
 }
-
-
-
-

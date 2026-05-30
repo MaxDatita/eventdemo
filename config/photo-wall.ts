@@ -1,10 +1,12 @@
+import { requireServerEnv } from '@/lib/required-env';
+
 export interface PhotoWallConfig {
   mode: 'moderation' | 'photographer';
   requiresApproval: boolean;
   maxPhotos: number;
   allowedFormats: string[];
   maxFileSize: number; // en MB
-  moderationPassword?: string;
+  moderationPassword: string;
 }
 
 export const photoWallConfig: PhotoWallConfig = {
@@ -14,6 +16,5 @@ export const photoWallConfig: PhotoWallConfig = {
   // Aceptamos también HEIC/HEIF; si el navegador lo provee, lo convertimos a JPEG en cliente
   allowedFormats: ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'],
   maxFileSize: 10, // 10MB
-  moderationPassword: process.env.MODERATION_PASSWORD || 'admin123'
+  moderationPassword: requireServerEnv('MODERATION_PASSWORD')
 };
-

@@ -9,11 +9,21 @@ import {
 import { NextResponse } from 'next/server';
 import { GoogleSpreadsheet } from 'google-spreadsheet';
 import { JWT } from 'google-auth-library';
+import { applyRateLimit, getRateLimitClientIp } from '@/lib/rate-limit';
+import { logError, logWarn } from '@/lib/server-log';
+
+const MAX_MESSAGES_PAGE_SIZE = 50;
+const MAX_MESSAGE_NAME_LENGTH = 60;
+const MAX_MESSAGE_BODY_LENGTH = 300;
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const page = parseInt(searchParams.get('page') || '1');
-  const pageSize = parseInt(searchParams.get('pageSize') || '20');
+  const requestedPageSize = parseInt(searchParams.get('pageSize') || '20');
+  const pageSize = Math.min(
+    Math.max(Number.isFinite(requestedPageSize) ? requestedPageSize : 20, 1),
+    MAX_MESSAGES_PAGE_SIZE
+  );
   const random = searchParams.get('random') === 'true';
   const statusParam = (searchParams.get('status') || 'approved').toLowerCase();
   const status: 'approved' | 'pending' | 'rejected' | 'all' =
@@ -30,7 +40,7 @@ export async function GET(request: Request) {
       page: page
     });
   } catch (error) {
-    console.error('Error:', error);
+    logError('messages_fetch_error');
     return NextResponse.json(
       { error: 'Error al obtener los mensajes' },
       { status: 500 }
@@ -40,6 +50,21 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const clientIp = getRateLimitClientIp(request);
+    const rateLimit = applyRateLimit(request, {
+      name: 'messages-post',
+      limit: 5,
+      windowMs: 60 * 1000,
+    });
+
+    if (!rateLimit.allowed) {
+      logWarn('messages_rate_limited', { ip: clientIp });
+      return NextResponse.json(
+        { error: 'Demasiados envíos. Intentá nuevamente en un momento.' },
+        { status: 429 }
+      );
+    }
+
     const body = await request.json();
     const nombre = String(body.nombre || '').trim();
     const mensaje = String(body.mensaje || '').trim();
@@ -47,6 +72,20 @@ export async function POST(request: Request) {
     if (!nombre || !mensaje) {
       return NextResponse.json(
         { error: 'Nombre y mensaje son requeridos' },
+        { status: 400 }
+      );
+    }
+
+    if (nombre.length > MAX_MESSAGE_NAME_LENGTH) {
+      return NextResponse.json(
+        { error: `El nombre no puede superar los ${MAX_MESSAGE_NAME_LENGTH} caracteres` },
+        { status: 400 }
+      );
+    }
+
+    if (mensaje.length > MAX_MESSAGE_BODY_LENGTH) {
+      return NextResponse.json(
+        { error: `El mensaje no puede superar los ${MAX_MESSAGE_BODY_LENGTH} caracteres` },
         { status: 400 }
       );
     }
@@ -102,7 +141,10 @@ export async function POST(request: Request) {
         moderationReason = resolved.reason;
         moderationMode = 'sync';
       } catch (error) {
-        console.error('Error moderating message during submit. Guardando como pending:', error);
+        logWarn('messages_moderation_fallback', {
+          ip: clientIp,
+          reason: error instanceof Error ? error.message : 'unknown',
+        });
         moderationMode = 'fallback-pending';
       }
     }
@@ -133,7 +175,10 @@ export async function POST(request: Request) {
       moderationMode,
     });
   } catch (error) {
-    console.error('Error en POST /api/messages:', error);
+    logError('messages_submit_error', {
+      ip: getRateLimitClientIp(request),
+      reason: error instanceof Error ? error.message : 'unknown',
+    });
     return NextResponse.json(
       { error: 'Error al guardar el mensaje' }, 
       { status: 500 }

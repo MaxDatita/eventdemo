@@ -7,6 +7,7 @@ import Providers from './providers'
 import { PreconnectLinks } from '@/components/preconnect-links'
 import { theme } from '@/config/theme'
 import { BackgroundLayer } from '@/components/ui/background-layer'
+import { DemoAuthStatus } from '@/components/demo-auth-status'
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -103,6 +104,7 @@ export default function RootLayout({
         <div className="relative z-10">
           <PreconnectLinks />
           <Providers>
+            <DemoAuthStatus />
             {children}
             <Toaster />
             <Analytics />

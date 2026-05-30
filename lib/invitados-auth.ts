@@ -1,5 +1,5 @@
 import { createHmac, timingSafeEqual } from 'crypto';
-import { photoWallConfig } from '@/config/photo-wall';
+import { requireServerEnv } from '@/lib/required-env';
 
 const INVITADOS_SESSION_COOKIE = 'invitados_session';
 const INVITADOS_SESSION_MAX_AGE_SECONDS = 60 * 60 * 24;
@@ -11,12 +11,7 @@ function signInvitadosSession(expiresAt: string) {
 }
 
 function getInvitadosSessionSecret() {
-  return (
-    process.env.INVITADOS_SESSION_SECRET ||
-    process.env.INVITADOS_PASSWORD ||
-    process.env.MODERATION_PASSWORD ||
-    'dev-invitados-session-secret'
-  );
+  return requireServerEnv('INVITADOS_SESSION_SECRET');
 }
 
 function getCookieValue(request: Request, name: string) {
@@ -34,7 +29,7 @@ function getCookieValue(request: Request, name: string) {
 }
 
 export function getInvitadosPassword() {
-  return process.env.INVITADOS_PASSWORD || photoWallConfig.moderationPassword || 'admin123';
+  return requireServerEnv('INVITADOS_PASSWORD');
 }
 
 export function getPasswordFromRequest(request: Request) {

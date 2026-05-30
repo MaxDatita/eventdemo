@@ -8,6 +8,8 @@ interface TicketData {
   rowIndex: number;
 }
 
+const isDevelopment = process.env.NODE_ENV !== 'production';
+
 // Crear una única instancia de JWT
 const getJWTClient = () => {
   const key = process.env.GOOGLE_PRIVATE_KEY?.split(String.raw`\n`).join('\n');
@@ -41,7 +43,7 @@ export async function getEventData() {
 
     return { eventName, organizerEmail };
   } catch (error) {
-    console.error('Error getting event data:', error);
+    console.error('Error getting event data');
     throw error;
   }
 }
@@ -81,8 +83,8 @@ export async function getUnsentTickets(email: string): Promise<TicketData[]> {
           qrCode: qrCode ? qrCode.replace('@', '') : '', // Validar antes de usar replace
           rowIndex: index + 2
         });
-      } else {
-        console.log(`❌ Ticket no válido en fila ${index + 2}:`)
+      } else if (isDevelopment) {
+        console.log(`Ticket no válido en fila ${index + 2}`);
       }
     });
 
@@ -91,7 +93,7 @@ export async function getUnsentTickets(email: string): Promise<TicketData[]> {
     
     return validTickets;
   } catch (error) {
-    console.error('Error obteniendo tickets:', error);
+    console.error('Error obteniendo tickets');
     throw error;
   }
 }
@@ -115,7 +117,7 @@ export async function markTicketsAsSent(rowIndexes: number[]) {
         const row = rows[adjustedIndex];
         
         if (!row) {
-          console.error(`Fila ${rowIndex} no encontrada (índice ajustado: ${adjustedIndex})`);
+          console.error(`Fila ${rowIndex} no encontrada`);
           continue;
         }
 
@@ -125,24 +127,30 @@ export async function markTicketsAsSent(rowIndexes: number[]) {
         // Guardar la fila
         await row.save();
       } catch (rowError) {
-        console.error(`Error al procesar fila ${rowIndex}:`, rowError);
+        console.error(`Error al procesar fila ${rowIndex}`);
       }
     }
 
     return true;
   } catch (error) {
     if (error instanceof Error) {
-      console.error('Error al marcar tickets como enviados:', {
-        error: error.message,
-        stack: error.stack,
-        rowIndexes
-      });
+      console.error('Error al marcar tickets como enviados');
+      if (isDevelopment) {
+        console.error({
+          error: error.message,
+          stack: error.stack,
+          rowIndexes,
+        });
+      }
       throw new Error(`Error al marcar tickets como enviados: ${error.message}`);
     } else {
-      console.error('Error al marcar tickets como enviados:', {
-        error: String(error),
-        rowIndexes
-      });
+      console.error('Error al marcar tickets como enviados');
+      if (isDevelopment) {
+        console.error({
+          error: String(error),
+          rowIndexes,
+        });
+      }
       throw new Error(`Error al marcar tickets como enviados: ${String(error)}`);
     }
   }

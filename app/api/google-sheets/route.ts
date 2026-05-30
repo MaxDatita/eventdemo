@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 import { getEventData, getUnsentTickets, markTicketsAsSent } from '@/services/googleSheet';
+import { isPositiveIntegerArray, isValidEmail } from '@/lib/validation';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const email = searchParams.get('email');
+  const email = searchParams.get('email')?.trim();
 
-  if (!email) {
-    return NextResponse.json({ error: 'Email is required' }, { status: 400 });
+  if (!email || !isValidEmail(email)) {
+    return NextResponse.json({ error: 'Email inválido' }, { status: 400 });
   }
 
   try {
@@ -22,12 +23,10 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const { rowIndexes } = await request.json();
-    
-    console.log('Recibida solicitud para marcar filas:', rowIndexes);
 
-    if (!rowIndexes || !Array.isArray(rowIndexes)) {
+    if (!isPositiveIntegerArray(rowIndexes, { maxItems: 100, maxValue: 100000 })) {
       return NextResponse.json(
-        { error: 'rowIndexes debe ser un array válido' },
+        { error: 'rowIndexes debe ser un array válido de enteros positivos' },
         { status: 400 }
       );
     }
@@ -44,12 +43,12 @@ export async function POST(request: Request) {
     }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-    console.error('Error al marcar tickets como enviados:', errorMessage);
+    console.error('Error al marcar tickets como enviados');
     
     return NextResponse.json(
       { 
         error: 'Error al marcar tickets como enviados',
-        details: errorMessage
+        details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
       },
       { status: 500 }
     );

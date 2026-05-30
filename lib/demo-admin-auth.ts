@@ -1,5 +1,7 @@
+import { requireServerEnv } from '@/lib/required-env';
+
 export function getDemoAdminPassword() {
-  return process.env.DEMO_ADMIN_PASSWORD || 'admin123';
+  return requireServerEnv('DEMO_ADMIN_PASSWORD');
 }
 
 export function isDemoAdminPasswordValid(password: string | null | undefined) {
