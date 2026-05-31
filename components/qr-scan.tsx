@@ -124,6 +124,7 @@ const QRScanner = ({ onAuthExpired }: QRScannerProps) => {
           success: false,
           title: response.status === 409 ? 'Entrada ya utilizada' : 'QR no valido',
           message: data?.error || 'No se pudo validar el codigo.',
+          invitado: data?.invitado,
         })
         return
       }

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { markIngresoById } from '@/lib/google-sheets-invitados';
+import { InvitadoAlreadyCheckedInError, markIngresoById } from '@/lib/google-sheets-invitados';
 import { invalidateInvitadosCache } from '@/lib/invitados-cache';
 import { isInvitadosPasswordValid } from '@/lib/invitados-auth';
 import { isSafeId } from '@/lib/validation';
@@ -25,13 +25,21 @@ export async function POST(request: Request) {
       invitado,
     });
   } catch (error) {
+    if (error instanceof InvitadoAlreadyCheckedInError) {
+      return NextResponse.json(
+        {
+          error: error.message,
+          invitado: error.invitado,
+        },
+        { status: 409 }
+      );
+    }
+
     const message = error instanceof Error ? error.message : 'Error al actualizar ingreso';
     const status =
       message === 'Invitado no encontrado'
         ? 404
-        : message === 'El invitado ya fue marcado como ingresado'
-          ? 409
-          : 500;
+        : 500;
 
     console.error('Error en POST /api/invitados/checkin:', error);
     return NextResponse.json({ error: message }, { status });

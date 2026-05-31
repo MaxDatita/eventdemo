@@ -26,6 +26,16 @@ export interface AdminInvitadoRecord extends InvitadoRecord {
   rowNumber: number;
 }
 
+export class InvitadoAlreadyCheckedInError extends Error {
+  invitado: InvitadoRecord;
+
+  constructor(invitado: InvitadoRecord) {
+    super('El invitado ya fue marcado como ingresado');
+    this.name = 'InvitadoAlreadyCheckedInError';
+    this.invitado = invitado;
+  }
+}
+
 function getJwtClient() {
   return new JWT({
     email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
@@ -201,6 +211,49 @@ function mapRowToAdminInvitado(
   };
 }
 
+function formatIngresoDateTime() {
+  return new Intl.DateTimeFormat('es-AR', {
+    timeZone: 'America/Argentina/Salta',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  }).format(new Date());
+}
+
+async function updateIngresoCells(
+  sheet: Awaited<ReturnType<typeof getInvitadosSheet>>,
+  rowNumber: number,
+  columns: InvitadoColumnMap,
+  ingreso: boolean,
+  fechaHoraIngreso: string
+) {
+  const ingresoColumnIndex = sheet.headerValues.indexOf(columns.ingreso!);
+  const fechaColumnIndex = sheet.headerValues.indexOf(columns.fechaHoraIngreso!);
+
+  if (ingresoColumnIndex < 0 || fechaColumnIndex < 0) {
+    throw new Error('No se pudieron resolver las columnas de ingreso');
+  }
+
+  const rowIndex = rowNumber - 1;
+  const startColumnIndex = Math.min(ingresoColumnIndex, fechaColumnIndex);
+  const endColumnIndex = Math.max(ingresoColumnIndex, fechaColumnIndex) + 1;
+
+  await sheet.loadCells({
+    startRowIndex: rowIndex,
+    endRowIndex: rowIndex + 1,
+    startColumnIndex,
+    endColumnIndex,
+  });
+
+  sheet.getCell(rowIndex, ingresoColumnIndex).value = ingreso ? 'TRUE' : 'FALSE';
+  sheet.getCell(rowIndex, fechaColumnIndex).value = fechaHoraIngreso;
+  await sheet.saveUpdatedCells();
+}
+
 export async function listInvitados(search?: string): Promise<InvitadoRecord[]> {
   const sheet = await getInvitadosSheet();
   const columns = resolveColumns(sheet.headerValues);
@@ -238,31 +291,23 @@ export async function markIngresoById(id: string, ingreso: boolean): Promise<Inv
 
   const alreadyCheckedIn = toBoolean(row.get(columns.ingreso!));
   if (ingreso && alreadyCheckedIn) {
-    throw new Error('El invitado ya fue marcado como ingresado');
+    throw new InvitadoAlreadyCheckedInError(mapRowToInvitado(row, columns));
   }
 
-  row.set(columns.ingreso!, ingreso ? 'TRUE' : 'FALSE');
+  const fechaHoraIngreso = ingreso ? formatIngresoDateTime() : '';
+  const rowNumber = typeof row.rowNumber === 'number' ? row.rowNumber : 0;
 
-  if (ingreso) {
-    const now = new Date();
-    const fechaHora = new Intl.DateTimeFormat('es-AR', {
-      timeZone: 'America/Argentina/Salta',
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: false,
-    }).format(now);
-
-    row.set(columns.fechaHoraIngreso!, fechaHora);
-  } else {
-    row.set(columns.fechaHoraIngreso!, '');
+  if (!rowNumber) {
+    throw new Error('No se pudo resolver la fila del invitado');
   }
 
-  await row.save();
-  return mapRowToInvitado(row, columns);
+  await updateIngresoCells(sheet, rowNumber, columns, ingreso, fechaHoraIngreso);
+
+  return {
+    ...mapRowToInvitado(row, columns),
+    ingreso,
+    fechaHoraIngreso: fechaHoraIngreso || null,
+  };
 }
 
 export async function listAdminInvitados(): Promise<AdminInvitadoRecord[]> {
