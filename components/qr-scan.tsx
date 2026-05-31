@@ -210,18 +210,21 @@ const QRScanner = ({ onAuthExpired }: QRScannerProps) => {
         </h1>
 
         <Card className="rounded-xl shadow-md p-4 mb-4 border-2 border-t-4 border-[#FF914E] border-t-[#FFCF6E] bg-white">
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-            <div className="rounded-lg bg-[#FFF7E8] border border-[#FFD9A8] p-3 text-center">
-              <p className="text-xs text-gray-600">Lectura</p>
-              <p className="text-lg font-bold text-gray-900">QR por ID</p>
+          <p className="mb-3 text-center text-sm font-semibold text-gray-700">Lectura QR por ID</p>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="flex flex-col items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2.5 text-center">
+              <span className="h-3 w-3 shrink-0 rounded-full bg-green-500 ring-2 ring-green-200" aria-hidden />
+              <div>
+                <p className="text-sm font-bold text-green-800">Pasa</p>
+                <p className="text-xs text-green-700">Entrada valida — se marca el ingreso</p>
+              </div>
             </div>
-            <div className="rounded-lg bg-green-50 border border-green-200 p-3 text-center">
-              <p className="text-xs text-green-700">Valido</p>
-              <p className="text-lg font-bold text-green-800">Marca ingreso</p>
-            </div>
-            <div className="rounded-lg bg-amber-50 border border-amber-200 p-3 text-center">
-              <p className="text-xs text-amber-700">Repetido</p>
-              <p className="text-lg font-bold text-amber-800">No aprueba</p>
+            <div className="flex flex-col items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-center">
+              <span className="h-3 w-3 shrink-0 rounded-full bg-red-500 ring-2 ring-red-200" aria-hidden />
+              <div>
+                <p className="text-sm font-bold text-red-800">No pasa</p>
+                <p className="text-xs text-red-700">Entrada ya registrada o QR no valido</p>
+              </div>
             </div>
           </div>
         </Card>
