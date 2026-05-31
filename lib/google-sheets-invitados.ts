@@ -9,7 +9,8 @@ type InvitadoColumnKey =
   | 'acompanantes'
   | 'mesa'
   | 'ingreso'
-  | 'fechaHoraIngreso';
+  | 'fechaHoraIngreso'
+  | 'freePass';
 
 type InvitadoColumnMap = Record<InvitadoColumnKey, string | null>;
 
@@ -20,6 +21,7 @@ export interface InvitadoRecord {
   mesa: string | null;
   ingreso: boolean;
   fechaHoraIngreso: string | null;
+  freePass: boolean;
 }
 
 export interface AdminInvitadoRecord extends InvitadoRecord {
@@ -94,6 +96,14 @@ function resolveColumns(headers: string[]): InvitadoColumnMap {
       'fecha_hora_ingreso',
       'fecha ingreso',
       'hora ingreso',
+    ]),
+    freePass: resolveHeader(headers, [
+      'free pass',
+      'freepass',
+      'pase libre',
+      'pase libre 3 dias',
+      'pase libre 3 días',
+      'acceso libre',
     ]),
   };
 }
@@ -198,6 +208,7 @@ function mapRowToInvitado(
     mesa: columns.mesa ? asText(row.get(columns.mesa)) : null,
     ingreso: toBoolean(row.get(columns.ingreso!)),
     fechaHoraIngreso: asText(row.get(columns.fechaHoraIngreso!)),
+    freePass: columns.freePass ? toBoolean(row.get(columns.freePass)) : false,
   };
 }
 
@@ -249,7 +260,7 @@ async function updateIngresoCells(
     endColumnIndex,
   });
 
-  sheet.getCell(rowIndex, ingresoColumnIndex).value = ingreso ? 'TRUE' : 'FALSE';
+  sheet.getCell(rowIndex, ingresoColumnIndex).value = ingreso;
   sheet.getCell(rowIndex, fechaColumnIndex).value = fechaHoraIngreso;
   await sheet.saveUpdatedCells();
 }
@@ -289,9 +300,10 @@ export async function markIngresoById(id: string, ingreso: boolean): Promise<Inv
     throw new Error('Invitado no encontrado');
   }
 
-  const alreadyCheckedIn = toBoolean(row.get(columns.ingreso!));
-  if (ingreso && alreadyCheckedIn) {
-    throw new InvitadoAlreadyCheckedInError(mapRowToInvitado(row, columns));
+  const invitado = mapRowToInvitado(row, columns);
+  const alreadyCheckedIn = invitado.ingreso;
+  if (ingreso && alreadyCheckedIn && !invitado.freePass) {
+    throw new InvitadoAlreadyCheckedInError(invitado);
   }
 
   const fechaHoraIngreso = ingreso ? formatIngresoDateTime() : '';
@@ -304,7 +316,7 @@ export async function markIngresoById(id: string, ingreso: boolean): Promise<Inv
   await updateIngresoCells(sheet, rowNumber, columns, ingreso, fechaHoraIngreso);
 
   return {
-    ...mapRowToInvitado(row, columns),
+    ...invitado,
     ingreso,
     fechaHoraIngreso: fechaHoraIngreso || null,
   };

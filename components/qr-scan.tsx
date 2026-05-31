@@ -16,6 +16,7 @@ type ScanResult = {
     id: string
     nombre: string
     fechaHoraIngreso: string | null
+    freePass?: boolean
   }
 }
 
@@ -131,8 +132,10 @@ const QRScanner = ({ onAuthExpired }: QRScannerProps) => {
 
       setScanResult({
         success: true,
-        title: 'Entrada valida',
-        message: 'Ingreso registrado correctamente.',
+        title: data.invitado?.freePass ? 'Free pass valido' : 'Entrada valida',
+        message: data.invitado?.freePass
+          ? 'Ingreso permitido. Free pass activo.'
+          : 'Ingreso registrado correctamente.',
         invitado: data.invitado,
       })
     } catch {
@@ -258,6 +261,11 @@ const QRScanner = ({ onAuthExpired }: QRScannerProps) => {
                   {scanResult.invitado.fechaHoraIngreso && (
                     <p>
                       <strong>Ingreso:</strong> {scanResult.invitado.fechaHoraIngreso}
+                    </p>
+                  )}
+                  {scanResult.invitado.freePass && (
+                    <p>
+                      <strong>Tipo:</strong> Free pass
                     </p>
                   )}
                 </div>
