@@ -1,7 +1,7 @@
 'use client'
 
 import { Html5Qrcode } from 'html5-qrcode'
-import { Camera, CheckCircle2, LogOut, RotateCcw, ScanLine, XCircle } from 'lucide-react'
+import { Camera, CheckCircle2, LogOut, RotateCcw, ScanLine, X, XCircle } from 'lucide-react'
 import Image from 'next/image'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
@@ -192,6 +192,16 @@ const QRScanner = ({ onAuthExpired, onLogout }: QRScannerProps) => {
     setIsScanning(true)
   }
 
+  const handleStopCamera = useCallback(async () => {
+    if (scannerRef.current) {
+      await scannerRef.current.stop().catch(() => null)
+      scannerRef.current = null
+    }
+    setIsScanning(false)
+    setHasPermission(false)
+    setError(null)
+  }, [])
+
   return (
     <div className="pt-6 pb-6 pl-6 pr-6 flex flex-col items-center relative z-10">
       <div className="w-full max-w-3xl mt-12 flex flex-col">
@@ -206,17 +216,20 @@ const QRScanner = ({ onAuthExpired, onLogout }: QRScannerProps) => {
           />
         </div>
 
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <h1 className="heading-h1" style={{ color: theme.colors.primary }}>
+        <div className="mb-4 flex w-full items-center justify-between gap-3">
+          <h1
+            className="heading-h1 !mb-0 min-w-0 truncate !text-left"
+            style={{ color: theme.colors.primary }}
+          >
             Scanner QR
           </h1>
           {onLogout && (
             <Button
               onClick={onLogout}
-              className="shrink-0 bg-white hover:bg-[#FFF7E8] text-gray-800 border-2 border-[#FFD9A8]"
+              className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap bg-white hover:bg-[#FFF7E8] text-gray-800 border-2 border-[#FFD9A8]"
             >
-              <LogOut className="mr-2 h-4 w-4" />
-              Salir
+              <LogOut className="h-4 w-4 shrink-0" />
+              <span className="leading-none">Salir</span>
             </Button>
           )}
         </div>
@@ -288,9 +301,9 @@ const QRScanner = ({ onAuthExpired, onLogout }: QRScannerProps) => {
 
               <Button
                 onClick={handleReset}
-                className="mt-5 w-full bg-[#FF914E] hover:bg-[#ff8132] text-white border-2 border-[#FF914E]"
+                className="mt-5 w-full whitespace-nowrap bg-[#FF914E] hover:bg-[#ff8132] text-white border-2 border-[#FF914E]"
               >
-                <RotateCcw className="mr-2 h-4 w-4" />
+                <RotateCcw className="mr-2 h-4 w-4 shrink-0" />
                 Escanear otro QR
               </Button>
             </div>
@@ -316,7 +329,7 @@ const QRScanner = ({ onAuthExpired, onLogout }: QRScannerProps) => {
           ) : (
             <div className="text-gray-800">
               <div className="mb-4 flex items-center justify-center gap-2 text-center">
-                <ScanLine className="h-5 w-5 text-[#FF914E]" />
+                <ScanLine className="h-5 w-5 shrink-0 text-[#FF914E]" />
                 <p className="font-medium">Escaneá el QR de la entrada</p>
               </div>
               {error && <p className="mb-4 text-center text-sm text-red-600">{error}</p>}
@@ -325,6 +338,14 @@ const QRScanner = ({ onAuthExpired, onLogout }: QRScannerProps) => {
                 className="mx-auto min-h-[300px] overflow-hidden rounded-lg border border-[#FFD9A8]"
                 style={{ width: '100%' }}
               />
+              <Button
+                onClick={handleStopCamera}
+                variant="secondary"
+                className="mt-4 w-full whitespace-nowrap"
+              >
+                <X className="mr-2 h-4 w-4 shrink-0" />
+                Cerrar cámara
+              </Button>
             </div>
           )}
         </Card>

@@ -21,7 +21,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     return (
       <button
         className={cn(
-          "px-4 py-2 rounded-md transition-colors font-medium",
+          "inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md transition-colors font-medium",
           buttonVariants[variant],
           className
         )}
