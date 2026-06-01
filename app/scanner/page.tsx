@@ -80,6 +80,13 @@ export default function ScannerPage() {
     setAuthError('Tu sesión expiró. Ingresá la contraseña nuevamente.')
   }
 
+  const handleLogout = async () => {
+    await fetch('/api/invitados/auth', { method: 'DELETE' }).catch(() => null)
+    setIsAuthenticated(false)
+    setPassword('')
+    setAuthError('')
+  }
+
   if (!demoFeatures.scanner) {
     return (
       <div className="min-h-screen pt-6 pb-6 pl-6 pr-6 flex items-center justify-center">
@@ -153,5 +160,5 @@ export default function ScannerPage() {
     )
   }
 
-  return <QRScanner onAuthExpired={handleAuthExpired} />
+  return <QRScanner onAuthExpired={handleAuthExpired} onLogout={handleLogout} />
 }

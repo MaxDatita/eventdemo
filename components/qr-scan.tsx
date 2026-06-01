@@ -1,7 +1,7 @@
 'use client'
 
 import { Html5Qrcode } from 'html5-qrcode'
-import { Camera, CheckCircle2, RotateCcw, ScanLine, XCircle } from 'lucide-react'
+import { Camera, CheckCircle2, LogOut, RotateCcw, ScanLine, XCircle } from 'lucide-react'
 import Image from 'next/image'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
@@ -22,6 +22,7 @@ type ScanResult = {
 
 type QRScannerProps = {
   onAuthExpired?: () => void
+  onLogout?: () => void
 }
 
 function extractTicketId(decodedText: string) {
@@ -35,7 +36,7 @@ function extractTicketId(decodedText: string) {
   return value
 }
 
-const QRScanner = ({ onAuthExpired }: QRScannerProps) => {
+const QRScanner = ({ onAuthExpired, onLogout }: QRScannerProps) => {
   const [scanResult, setScanResult] = useState<ScanResult | null>(null)
   const [isScanning, setIsScanning] = useState(false)
   const [hasPermission, setHasPermission] = useState(false)
@@ -205,9 +206,20 @@ const QRScanner = ({ onAuthExpired }: QRScannerProps) => {
           />
         </div>
 
-        <h1 className="heading-h1 mb-4" style={{ color: theme.colors.primary }}>
-          Scanner QR
-        </h1>
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <h1 className="heading-h1" style={{ color: theme.colors.primary }}>
+            Scanner QR
+          </h1>
+          {onLogout && (
+            <Button
+              onClick={onLogout}
+              className="shrink-0 bg-white hover:bg-[#FFF7E8] text-gray-800 border-2 border-[#FFD9A8]"
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              Salir
+            </Button>
+          )}
+        </div>
 
         <Card className="rounded-xl shadow-md p-4 mb-4 border-2 border-t-4 border-[#FF914E] border-t-[#FFCF6E] bg-white">
           <p className="mb-3 text-center text-sm font-semibold text-gray-700">Lectura QR por ID</p>
